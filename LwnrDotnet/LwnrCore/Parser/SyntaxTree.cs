@@ -1,4 +1,6 @@
-﻿namespace LwnrCore;
+﻿using System.Text;
+
+namespace LwnrCore.Parser;
 
 /// <summary>
 /// Syntax tree for the parser and interpreter
@@ -75,6 +77,32 @@ public class SyntaxTree
             TokenType = type
         };
         Items.Add(child);
+    }
+
+    /// <summary>
+    /// Generate a human-readable debug representation of the whole syntax tree from this point
+    /// </summary>
+    public string Describe()
+    {
+        var sb = new StringBuilder();
+        DescribeRecursive(this, sb, 0);
+        return sb.ToString();
+    }
+
+    private void DescribeRecursive(SyntaxTree node, StringBuilder sb, int depth)
+    {
+        sb.AppendLine();
+        if (depth > 0) sb.Append(' ', depth * 2);
+        sb.Append(node.Type.ToString());
+        if (node.Value is not null)
+        {
+            sb.Append($" {node.TokenType.ToString()}: {node.Value}");
+        }
+
+        foreach (var item in node.Items)
+        {
+            DescribeRecursive(item, sb, depth + 1);
+        }
     }
 }
 

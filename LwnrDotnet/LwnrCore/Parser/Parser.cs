@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace LwnrCore;
+namespace LwnrCore.Parser;
 
 /// <summary>
 /// Basic parser, string to AST.
@@ -110,7 +110,8 @@ public static class Parser
                 sb.Append('`');
                 break;
             
-            case TokenType.General:
+            case TokenType.LiteralNumber:
+            case TokenType.Atom:
                 sb.Append(item.Value);
                 break;
             

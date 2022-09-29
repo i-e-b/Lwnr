@@ -1,6 +1,7 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 
-namespace LwnrCore;
+namespace LwnrCore.Parser;
 
 /// <summary>
 /// A string scanner for parsing
@@ -94,8 +95,27 @@ public class ParserCursor
             Step();
         }
 
-        type = TokenType.General;
-        return sb.ToString();
+        var value = sb.ToString();
+        type = LooksLikeNumber(value) ? TokenType.LiteralNumber : TokenType.Atom;
+        return value;
+    }
+
+    private bool LooksLikeNumber(string value)
+    {
+        // strip out separators, allowing "10'000" or "10_000" or "0x7FFF_8050"
+        if (value.Contains('\'') || value.Contains('_'))
+        {
+            value = value.Replace("'", "").Replace("_","");
+        }
+
+        // 'float' style should handle most things
+        if (double.TryParse(value, NumberStyles.Float, null, out _)) return true;
+        
+        // maybe a different base?
+        if (value.StartsWith("0x") || value.StartsWith("0b")) value = value.Substring(2);
+        if (int.TryParse(value, NumberStyles.HexNumber, null, out _)) return true;
+        
+        return false;
     }
 
     private string ReadQuotedString(out bool complete)
@@ -106,6 +126,7 @@ public class ParserCursor
         Step();
         if (_on == '`')
         {
+            Step(); // eat the close quote
             complete = true;
             return ""; // empty
         }

@@ -1,4 +1,4 @@
-﻿namespace LwnrCore;
+﻿namespace LwnrCore.Parser;
 
 /// <summary>
 /// Token types
@@ -21,17 +21,22 @@ public enum TokenType
     LiteralString = 2,
     
     /// <summary>
-    /// Some kind of un-quoted token
+    /// An unquoted numeric string
     /// </summary>
-    General = 3,
+    LiteralNumber = 3,
+    
+    /// <summary>
+    /// Some kind of un-quoted, non-numeric token
+    /// </summary>
+    Atom = 4,
     
     /// <summary>
     /// '(' character
     /// </summary>
-    OpenParen = 4,
+    OpenParen = 5,
     
     /// <summary>
     /// ')' character
     /// </summary>
-    CloseParen = 5
+    CloseParen = 6
 }

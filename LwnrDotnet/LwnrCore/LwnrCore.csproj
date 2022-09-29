@@ -16,4 +16,8 @@
       <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
 
+    <ItemGroup>
+      <Folder Include="Interpreter" />
+    </ItemGroup>
+
 </Project>
