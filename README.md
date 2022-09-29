@@ -48,6 +48,13 @@ management to the language -- but only by taking away some freedoms.
 3. everything is deconstructed when it goes out of scope
 4. memory addresses are never available
 
+### Language
+
+The human-readable language will be a simple S-Expression based one,
+as the focus is on the memory and resource management.
+
+The runtime is a simple interpreter of the AST for the same reasons.
+
 ## Implications
 * to get a result from a function, you must pass in a container.
 * we must have a way to create something in a container's scope.
