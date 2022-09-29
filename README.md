@@ -1,9 +1,50 @@
 # Lwnr
+
 Experimental automatic resource control
+_or_
+Recreating Rust from a different direction
+
+## Background
+
+A huge range of problems in software development find their root in one cause:
+Memory is just a big array (to the ISA, at least), and the underlying hardware doesn't have any idea
+what you are using it for.
+
+There are common ways to handle this:
+
+* Manual memory management (e.g. C, and most pre 1995 languages) - The programmer must
+  keep track of memory use and lifecycles. Any mistakes *might* cause runtime failure
+  but are not guaranteed to.
+* Garbage collection (most post 1995 languages) - The programmer is responsible for
+  allocating memory, but a separate process tries to determine if memory is still in
+  use, and deallocate when needed. This removes a range of errors.
+
+Most GC languages still have manual management for interop with the OS etc, including
+things like file handles and threads.
+GC languages are susceptible to leaks, and have various issues with cycle management
+and strong-vs-weak references.
+
+Far less common is lifecycle tracking, seen primarily in Rust lang.
+This uses language and compiler features to track the life cycle of *BOTH* allocated
+memory and resources. It requires you to be explicit when rules are broken.
+
+This closes off another, wider range of errors. It greatly increases burden of
+expression on the programmer, and complexity of the language and tooling.
+
+**However**, ALL of these languages have a second, fully automatic memory management
+system: the call stack. This shuffles small amounts of data around using the languages'
+*lexical* scope to define the *memory* scope of local primitive variables, function
+arguments, and return values.
+
+## What is this project?
+
+This is an experiment, to see if it is practical to use *scope* as the only
+lifecycle management system. We will try to gain Rust's safety without adding
+management to the language -- but only by taking away some freedoms.
 
 ## Rules
 1. functions can never return values
-2. every constructor must have a deconstructor
+2. every constructor must have a destructor
 3. everything is deconstructed when it goes out of scope
 4. memory addresses are never available
 
@@ -11,7 +52,7 @@ Experimental automatic resource control
 * to get a result from a function, you must pass in a container.
 * we must have a way to create something in a container's scope.
 
-* every type must have a constructor and deconstructor
+* every non-primitive **type** must have a constructor and destructor
 * any external resources must be opened during constructor and closed in destructor
 * instances are only accessible from their container? (Construct into container first, then alias -- aliases cannot be added to containers)
 * every type can be serialised and deserialised perfectly, including containers.
