@@ -15,12 +15,43 @@ public static class Parser
     {
         var outp = new SyntaxTree();
         
+        var target = outp;
         var cursor = new ParserCursor(input, 0);
-        
-        // read next token
-        var token = cursor.ReadToken();
-        
-        // categorise token
+
+        while (cursor.HasSome())
+        {
+            // read next token
+            var token = cursor.ReadToken(out var tokenType);
+
+            // categorise token
+            if (tokenType == TokenType.Invalid)
+            {
+                outp.IsValid = false;
+            }
+            else if (tokenType == TokenType.OpenParen) // go deeper
+            {
+                target = target.AddListNode();
+            }
+            else if (tokenType == TokenType.CloseParen) // up
+            {
+                if (target.Parent is null) // too many close paren
+                {
+                    outp.IsValid = false;
+                    return outp;
+                }
+
+                target = target.Parent;
+            }
+            else if (tokenType == TokenType.EndOfInput)
+            {
+                outp.IsValid = target.Parent is null; // false if not enough close paren
+                return outp;
+            }
+            else
+            {
+                target.AddToken(token, tokenType);
+            }
+        }
 
         return outp;
     }
@@ -31,109 +62,62 @@ public static class Parser
     public static string Render(SyntaxTree input)
     {
         var sb = new StringBuilder();
+
+        RenderRecursive(input, sb);
         
         return sb.ToString();
     }
-}
 
-/// <summary>
-/// A string scanner for parsing
-/// </summary>
-public class ParserCursor
-{
-    private readonly string _input;
-    private readonly int _startOffset;
-    private int _idx;
-    private char _on;
-
-    /// <summary>
-    /// Start parsing a string at an offset
-    /// </summary>
-    public ParserCursor(string input, int startOffset)
+    private static void RenderRecursive(SyntaxTree input, StringBuilder sb)
     {
-        _input = input;
-        _startOffset = startOffset;
-        _idx = startOffset;
-        ReadChar();
-    }
-
-    private void ReadChar()
-    {
-        if (_idx >= _input.Length) _on = '\0';
-        else _on = _input[_idx];
-    }
-
-    /// <summary>
-    /// Move the cursor forward
-    /// </summary>
-    public void Step()
-    {
-        _idx++;
-        ReadChar();
-    }
-
-    /// <summary>
-    /// Returns true if the current char is any form of whitespace
-    /// </summary>
-    public bool OnWhiteSpace()
-    {
-        if (_on == '\0') return false;
-        return char.IsWhiteSpace(_on);
-    }
-
-    /// <summary>
-    /// Read characters until the class changes or we hit end of input.
-    /// An empty result indicates end of input.
-    /// </summary>
-    public string ReadToken()
-    {
-        // skip whitespace
-        while (OnWhiteSpace()) { Step(); }
-        
-        // handle single-char cases
-        switch (_on)
+        bool first = true;
+        foreach (var item in input.Items)
         {
-            case '(':
+            if (!first) sb.Append(' ');
+            switch (item.Type)
             {
-                Step();
-                return "(";
+                case SyntaxNodeType.List:
+                    sb.Append('(');
+                    RenderRecursive(item, sb);
+                    sb.Append(')');
+                    break;
+                
+                case SyntaxNodeType.Token:
+                    RenderToken(item, sb);
+                    break;
+                
+                case SyntaxNodeType.Root: // there should be only one root node
+                default: throw new Exception("Unexpected syntax node type");
             }
-            case ')':
-            {
-                Step();
-                return ")";
-            }
-            case '`': return ReadQuotedString();
-            case '\0': return "";
+            first = false;
         }
-        
-        // Some other type of token. Read up to next paren, quote, or whitespace
-        var sb = new StringBuilder();
-
-        while (!IsBreakChar())
-        {
-            sb.Append(_on);
-            Step();
-        }
-
-        return sb.ToString();
     }
 
-    private bool IsBreakChar()
+    private static void RenderToken(SyntaxTree item, StringBuilder sb)
     {
-        return _on switch
+        switch (item.TokenType)
         {
-            '(' => true,
-            ')' => true,
-            '`' => true,
-            '\0' => true,
+            case TokenType.Invalid:
+                sb.Append($"(? {item.Value??""})");
+                break;
             
-            _ => false
-        };
-    }
-
-    private string ReadQuotedString()
-    {
-        throw new NotImplementedException();
+            case TokenType.EndOfInput:
+                break;
+            
+            case TokenType.LiteralString:
+                sb.Append('`');
+                sb.Append(item.Value);
+                sb.Append('`');
+                break;
+            
+            case TokenType.General:
+                sb.Append(item.Value);
+                break;
+            
+            case TokenType.OpenParen:
+            case TokenType.CloseParen:
+            default:
+                throw new Exception("Unexpected token type");
+        }
     }
 }

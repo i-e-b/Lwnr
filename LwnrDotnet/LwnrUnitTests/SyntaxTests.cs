@@ -24,7 +24,5 @@ public class SyntaxTests
         var rendered = Parser.Render(tree);
         
         Assert.That(rendered.Trim(), Is.EqualTo(helloWorld.Trim()), "rendered output");
-        
-        Assert.Inconclusive("not implemented");
     }
 }
