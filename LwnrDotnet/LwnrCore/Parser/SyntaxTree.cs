@@ -29,17 +29,17 @@ public class SyntaxTree
     /// <summary>
     /// What does this node represent?
     /// </summary>
-    public SyntaxNodeType Type { get; set; }
+    public SyntaxNodeType Type { get; private init; }
 
     /// <summary>
     /// Token value of this node
     /// </summary>
-    public string? Value { get; set; }
+    public string? Value { get; private init; }
 
     /// <summary>
     /// Type of token, if any
     /// </summary>
-    public TokenType TokenType { get; set; }
+    public TokenType TokenType { get; private init; }
     
     /// <summary>
     /// Child nodes
@@ -49,7 +49,7 @@ public class SyntaxTree
     /// <summary>
     /// The parent node of this, or null if we're root
     /// </summary>
-    public SyntaxTree? Parent { get; set; }
+    public SyntaxTree? Parent { get; private init; }
 
     /// <summary>
     /// Create a new node that is a child of this one.

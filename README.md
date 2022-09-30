@@ -1,7 +1,9 @@
 # Lwnr
 
 Experimental automatic resource control
+
 _or_
+
 Recreating Rust from a different direction
 
 ## Background
@@ -56,10 +58,14 @@ as the focus is on the memory and resource management.
 The runtime is a simple interpreter of the AST for the same reasons.
 
 ## Implications
+
 * to get a result from a function, you must pass in a container.
 * we must have a way to create something in a container's scope.
 
 * every non-primitive **type** must have a constructor and destructor
+  * there is **no way** to deallocate a single thing -- everything in scope goes at the end of that scope
+  * most destructors that don't hold external resources are no-ops.
+  * inside-scope allocators can be very simple bump-type
 * any external resources must be opened during constructor and closed in destructor
 * instances are only accessible from their container? (Construct into container first, then alias -- aliases cannot be added to containers)
 * every type can be serialised and deserialised perfectly, including containers.
@@ -80,7 +86,7 @@ The runtime is a simple interpreter of the AST for the same reasons.
   - `array` basic pre-allocated list (fixed size)
   - ??? `char` NOT byte, but a uint16/uint32 that can be represented as one or more uint8 (fixed size)
 
-
+* What happens during recursion? Repeatedly opening memory scopes _should_ work.
 * Lambda functions should be fine, but only available as `alias` class, preventing them from being stored for future use.
 * Spawning threads only makes sense if the caller waits for them to end. This probably works fine with a supervisor->worker model with message passing.
 
@@ -135,3 +141,7 @@ The runtime is a simple interpreter of the AST for the same reasons.
   (thread.join t1 t2 t3)
 )
 ```
+
+### How I am supposed to pronounce "Lwnr"?
+
+_Rwy'n byw yng Nghymru_, so I would say it like "Lunar", but you do you.

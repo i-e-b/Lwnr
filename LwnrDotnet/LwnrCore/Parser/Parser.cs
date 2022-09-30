@@ -23,36 +23,41 @@ public static class Parser
             // read next token
             var token = cursor.ReadToken(out var tokenType);
 
-            // categorise token
-            if (tokenType == TokenType.Invalid)
+            switch (tokenType)
             {
-                outp.IsValid = false;
-            }
-            else if (tokenType == TokenType.OpenParen) // go deeper
-            {
-                target = target.AddListNode();
-            }
-            else if (tokenType == TokenType.CloseParen) // up
-            {
-                if (target.Parent is null) // too many close paren
-                {
+                // categorise token
+                case TokenType.Invalid:
+                    target.AddToken(token, tokenType);
+                    outp.IsValid = false;
+                    break;
+                
+                case TokenType.OpenParen: // go deeper
+                    target = target.AddListNode();
+                    break;
+                
+                case TokenType.CloseParen when target.Parent is null:// too many close paren
                     outp.IsValid = false;
                     return outp;
-                }
+                
+                case TokenType.CloseParen: // up
+                    target = target.Parent;
+                    break;
+                
+                case TokenType.EndOfInput:
+                    outp.IsValid = target.Parent is null; // false if not enough close paren
+                    return outp;
 
-                target = target.Parent;
-            }
-            else if (tokenType == TokenType.EndOfInput)
-            {
-                outp.IsValid = target.Parent is null; // false if not enough close paren
-                return outp;
-            }
-            else
-            {
-                target.AddToken(token, tokenType);
+                case TokenType.LiteralString:
+                case TokenType.LiteralNumber:
+                case TokenType.Atom:
+                    target.AddToken(token, tokenType);
+                    break;
+                
+                default: throw new Exception("Unexpected token type");
             }
         }
 
+        outp.IsValid = target.Parent is null; // false if not enough close paren
         return outp;
     }
 
@@ -70,7 +75,7 @@ public static class Parser
 
     private static void RenderRecursive(SyntaxTree input, StringBuilder sb)
     {
-        bool first = true;
+        var first = true;
         foreach (var item in input.Items)
         {
             if (!first) sb.Append(' ');
