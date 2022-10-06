@@ -85,6 +85,16 @@ public class Vec
     }
 
     /// <summary>
+    /// Remove the last element in the vector, returning its value.
+    /// Returns false if the vector is empty
+    /// </summary>
+    public bool Pop(out byte[] value)
+    {
+        value = Array.Empty<byte>();
+        return false;
+    }
+
+    /// <summary>
     /// Return a span from the start to end of the first free slot at the end of the vector.
     /// Returns an empty span if no space is available
     /// </summary>
@@ -103,11 +113,18 @@ public class Vec
         var ok = _chunkList.Seek(whichChunk);
         if (!ok) throw new Exception($"Failed to seek chunk {whichChunk} in list {_chunkList}");
         
-        ok = _chunkList.Read(out var theChunk); // this is a span which is ( _elementSize[_elemsPerBlock] )
+        ok = _chunkList.Read(out var theChunk); // this is a span which is _elementSize
         if (!ok) throw new Exception($"Failed to read chunk {whichChunk} in list {_chunkList}");
         
+        if (theChunk.IsZero) // need to allocate the data for its slots
+        {
+            theChunk = _memory.Allocate(_elementSize);
+            _chunkList.Seek(whichChunk);
+            _chunkList.Write(theChunk);
+        }
+
         var offset = slotInChunk * _elementSize;
-        return theChunk.Subset(offset, _elementSize); // TODO: clean up Span to make byte/int clearer
+        return theChunk.Subset(offset, _elementSize);
     }
 
     /// <summary>
@@ -119,9 +136,11 @@ public class Vec
         // If we have any dead blocks, reclaim one
         if (_deadCount > 0)
         {
+            throw new NotImplementedException("Append block recovery");
         }
-
-        // TODO: add new block, add to chain.
+        
+        // add new block, add to chain.
+        _chunkList.AddChunk();
         _chunkCount++;
         
         return Span.Zero;
@@ -156,5 +175,4 @@ public class Vec
     /// Return number of elements currently stored in this vector
     /// </summary>
     public uint Count() => _elementCount;
-    
 }

@@ -17,5 +17,11 @@ public class VectorTests
         subject.Push(new byte[]{0x80,0x7f});
         
         Assert.That(subject.Count(), Is.EqualTo(1));
+        
+        var found = subject.Pop(out var result);
+        Assert.That(found, Is.True);
+        Assert.That(result, Is.EqualTo(new byte[]{0x80,0x7f}).AsCollection);
+        
+        Assert.That(subject.Count(), Is.EqualTo(0));
     }
 }

@@ -40,7 +40,7 @@ public class Span
     /// <summary>
     /// Returns true if this pointer has a range of zero.
     /// </summary>
-    public bool IsZero => Start >= End;
+    public bool IsZero => Start == 0 && End == 0;
 
     /// <summary>
     /// Number of bytes to store the span.
@@ -93,9 +93,9 @@ public class Span
     public Span Subset(uint startOffset, uint length = 0)
     {
         var newStart = Start + startOffset;
-        var newEnd = length < 1 ? End : newStart+length;
+        var newEnd = length < 1 ? End : (newStart+length-1);
         
-        if (newStart > End || newEnd > End) throw new Exception("Subset out of bounds");
+        if (newStart > End || newEnd > End) throw new Exception($"Subset out of bounds. Requested {newStart}..{newEnd} of {Start}..{End}");
         
         return new Span(Arena, newStart, newEnd);
     }

@@ -84,13 +84,11 @@ public class SpanList
     }
 
     /// <summary>
-    /// Allocate a new chunk, returning a pointer to it
+    /// Allocate a new chunk
     /// </summary>
     public void AddChunk()
     {
-        
         // each chunk is one uint larger, to hold a 'next' header
-
         if (_first.IsZero) // initial chunk
         {
             _first = _memorySpace.Allocate(ChunkBytes);
