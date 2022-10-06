@@ -10,7 +10,6 @@
 public class SpanList
 {
     private const uint BytesForData = BlockSize * Span.ByteSize;
-    private const uint Int32ForData = BlockSize * 2;
     private const uint BytesForPointer = sizeof(uint);
     private const uint ChunkBytes = BytesForData + BytesForPointer;
     
@@ -156,7 +155,7 @@ public class SpanList
         {
             var nextPtr = _headBlock.GetUInt32Idx(0);
             if (nextPtr == 0) break;
-            _headBlock = new Span(_memorySpace, nextPtr, nextPtr + Int32ForData);
+            _headBlock = new Span(_memorySpace, nextPtr, nextPtr + BytesForData);
             _headBlockNumber++;
         }
 
@@ -230,7 +229,7 @@ public class SpanList
                 throw new Exception("Sublist excluded entire list");
             }
 
-            newFirst = new Span(_memorySpace, nextPtr, nextPtr + Int32ForData);
+            newFirst = new Span(_memorySpace, nextPtr, nextPtr + BytesForData);
             start++;
         }
         

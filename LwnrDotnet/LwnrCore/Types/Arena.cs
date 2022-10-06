@@ -15,7 +15,7 @@ public class Arena
     /// <summary>
     /// The raw data
     /// </summary>
-    public List<UInt32> Data { get; set; } = new();
+    public List<byte> Data { get; set; } = new();
 
     /// <summary>
     /// Returns true if the arena is invalid
@@ -31,8 +31,7 @@ public class Arena
     {
         if (byteCount > int.MaxValue) throw new Exception("Not supported");
         var start = Data.Count;
-        byteCount += byteCount % 4;
-        Data.AddRange(Enumerable.Repeat((UInt32)0, (int)(byteCount / 4)));
+        Data.AddRange(Enumerable.Repeat((byte)0, (int)byteCount));
         var end = Data.Count - 1;
         return new Span(this, (uint)start, (uint)end);
     }

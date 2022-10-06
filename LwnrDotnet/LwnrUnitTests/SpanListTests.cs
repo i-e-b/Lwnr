@@ -47,7 +47,7 @@ public class SpanListTests
         Assert.That(value.Start, Is.EqualTo(2));
         Assert.That(value.End, Is.EqualTo(3));
         
-        Assert.That(memory.Data.Count, Is.EqualTo((SpanList.BlockSize * 2)+1));
+        Assert.That(memory.Data.Count, Is.EqualTo((SpanList.BlockSize * sizeof(uint) * 2)+ sizeof(uint)));
     }
 
     [Test]
@@ -82,7 +82,7 @@ public class SpanListTests
             }
         }
 
-        Assert.That(memory.Data.Count, Is.EqualTo((SpanList.BlockSize*2 + 1) * 3));
+        Assert.That(memory.Data.Count, Is.EqualTo((SpanList.BlockSize * sizeof(uint)*2 * 3) + (sizeof(uint)*3)));
     }
 
     [Test]

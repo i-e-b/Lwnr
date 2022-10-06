@@ -38,9 +38,9 @@ public class Span
     public static Span Zero => new(_nothing, 0, 0);
 
     /// <summary>
-    /// Returns true if this pointer is invalid. TODO: try to remove
+    /// Returns true if this pointer has a range of zero.
     /// </summary>
-    public bool IsZero => Start == End;
+    public bool IsZero => Start >= End;
 
     /// <summary>
     /// Number of bytes to store the span.
@@ -55,17 +55,12 @@ public class Span
     /// </summary>
     public void SetUInt32Idx(uint index, uint value)
     {
-        var ptr = index + Start;
+        var ptr = (int)(index*sizeof(uint) + Start);
         if (ptr > End) throw new Exception($"Index out of range: {ptr} of {Start}..{End}");
-        Arena.Data[(int)ptr] = value;
-    }
-
-    /// <summary>
-    /// Return a new pointer that is a subset of this one
-    /// </summary>
-    public Span Subset(uint startOffset)
-    {
-        return new Span(Arena, Start + startOffset, End);
+        Arena.Data[ptr++] = (byte)((value >> 24) & 0xff);
+        Arena.Data[ptr++] = (byte)((value >> 16) & 0xff);
+        Arena.Data[ptr++] = (byte)((value >>  8) & 0xff);
+        Arena.Data[ptr  ] = (byte)((value >>  0) & 0xff);
     }
 
     /// <summary>
@@ -73,9 +68,15 @@ public class Span
     /// </summary>
     public uint GetUInt32Idx(uint index)
     {
-        var ptr = index + Start;
+        var ptr = (int)(index*sizeof(uint) + Start);
         if (ptr > End) throw new Exception($"Index out of range: {ptr} of {Start}..{End}");
-        return Arena.Data[(int)ptr];
+        
+        uint result = 0;
+        result |= (uint)Arena.Data[ptr++] << 24;
+        result |= (uint)Arena.Data[ptr++] << 16;
+        result |= (uint)Arena.Data[ptr++] <<  8;
+        result |= (uint)Arena.Data[ptr  ] <<  0;
+        return result;
     }
 
     /// <summary>
@@ -83,7 +84,20 @@ public class Span
     /// </summary>
     public uint Size()
     {
-        return (End - Start + 1) * 4;
+        return End - Start + 1;
+    }
+
+    /// <summary>
+    /// Return a new pointer that is a subset of this one
+    /// </summary>
+    public Span Subset(uint startOffset, uint length = 0)
+    {
+        var newStart = Start + startOffset;
+        var newEnd = length < 1 ? End : newStart+length;
+        
+        if (newStart > End || newEnd > End) throw new Exception("Subset out of bounds");
+        
+        return new Span(Arena, newStart, newEnd);
     }
 
     /// <summary>
@@ -92,64 +106,24 @@ public class Span
     /// <param name="start">byte index of start (inclusive)</param>
     /// <param name="end">byte index of end (exclusive)</param>
     /// <remarks>In the real system this would just be a cast with a range check</remarks>
-    public byte[] ReadBytes(int start, int end)
+    public byte[] ReadBytes(uint start, uint end)
     {
         var last = end - 1;
         if (start > last) throw new Exception($"Invalid range {start}..{end}");
+        
+        var realStart = (int)(start+Start);
+        var realEnd = (int)(end+Start);
+        
+        if (realStart > End || realEnd > End) throw new Exception("start and end result in a range outside this span");
 
         var length = end - start;
-        
-        var startWord = start / 4;
-        var startShift = start % 4;
-        
-        var endWord = last / 4;
-        var endShift = last % 4;
-        
         var output = new byte[length];
+        
+        for (int i = 0; i < length; i++)
+        {
+            output[i] = Arena.Data[realStart++];
+        }
 
-        var idx = 0;
-        var word = Arena.Data[startWord];
-        startShift = 3 - startShift;
-        endShift = 3 - endShift;
-        
-        if (startWord == endWord) // special case -- no uint spans
-        {
-            if (startShift <= endShift) throw new Exception("Expectation failed. Check the logic");
-            
-            for (int i = startShift; i >= endShift; i--)
-            {
-                var b = i << 3;
-                output[idx++] = (byte)((word >> b)&0xff);
-            }
-            return output;
-        }
-        
-        
-        // head
-        for (int i = startShift; i >= 0; i--)
-        {
-            var b = i << 3;
-            output[idx++] = (byte)((word >> b)&0xff);
-        }
-        
-        // main
-        for (int i = startWord + 1; i < endWord; i++)
-        {
-            word = Arena.Data[i];
-            output[idx++] = (byte)((word >> 24) & 0xff);
-            output[idx++] = (byte)((word >> 16) & 0xff);
-            output[idx++] = (byte)((word >>  8) & 0xff);
-            output[idx++] = (byte)((word >>  0) & 0xff);
-        }
-        
-        // tail
-        word = Arena.Data[endWord];
-        for (int i = 3; i >= endShift; i--)
-        {
-            var b = i << 3;
-            output[idx++] = (byte)((word >> b) & 0xff);
-        }
-        
         return output;
     }
 
@@ -163,60 +137,15 @@ public class Span
         var last = input.Length + start - 1;
         if (start > last) throw new Exception($"Invalid range {start}..{last}");
 
-        var startWord = start / 4;
-        var startShift = start % 4;
+        var realStart = (int)(start+Start);
+        var realEnd = (int)(last+Start);
         
-        var endWord = last / 4;
-        var endShift = last % 4;
+        if (realStart > End || realEnd > End) throw new Exception("targetIndex and array length result in a range outside this span");
         
-        var idx = 0;
-        startShift = 3 - startShift;
-        endShift = 3 - endShift;
-        
-        if (startWord == endWord) // special case -- no uint spans
+        var length = input.Length;
+        for (int i = 0; i < length; i++)
         {
-            if (startShift <= endShift) throw new Exception("Expectation failed. Check the logic");
-            
-            for (int i = startShift; i >= endShift; i--)
-            {
-                var b = i << 3;
-                var val = Arena.Data[startWord];
-                var mask = ~(0xffu << b);
-                
-                Arena.Data[startWord] = (val&mask) | ((uint)input[idx++] << b);
-            }
-            return;
-        }
-        
-        // head
-        for (int i = startShift; i >= 0; i--)
-        {
-            var b = i << 3;
-            var val = Arena.Data[startWord];
-            var mask = ~(0xffu << b);
-                
-            Arena.Data[startWord] = (val&mask) | ((uint)input[idx++] << b);
-        }
-        
-        // main
-        for (int i = startWord + 1; i < endWord; i++)
-        {
-            long word = 0;
-            word |= (long)input[idx++] << 24;
-            word |= (long)input[idx++] << 16;
-            word |= (long)input[idx++] <<  8;
-            word |= (long)input[idx++] <<  0;
-            Arena.Data[i] = (uint)word;
-        }
-        
-        // tail
-        for (int i = 3; i >= endShift; i--)
-        {
-            var b = i << 3;
-            var val = Arena.Data[endWord];
-            var mask = ~(0xffu << b);
-                
-            Arena.Data[endWord] = (val&mask) | ((uint)input[idx++] << b);
+            Arena.Data[realStart++] = input[i];
         }
     }
 
