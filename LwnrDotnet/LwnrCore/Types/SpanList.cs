@@ -4,32 +4,38 @@
 /// A super-basic container class, used to back more advanced interfaces.
 /// <p></p>
 /// This is a forward-only linked list, each item being a fixed size block.
-/// The block size is a multiple of 4 bytes, and access to the data is as
-/// int32 values. Items cannot be removed.
+/// The block size is a multiple of the size of a span, and access to data
+/// is as span values. Items cannot be removed.
 /// </summary>
-public class LinkedBlockList32
+public class SpanList
 {
+    private const uint BytesForData = BlockSize * Span.ByteSize;
+    private const uint Int32ForData = BlockSize * 2;
+    private const uint BytesForPointer = sizeof(uint);
+    private const uint ChunkBytes = BytesForData + BytesForPointer;
+    
     /// <summary>
-    /// number of uints in each block
+    /// Number of spans in each block.
+    /// Larger is more compute efficient, smaller is less memory use.
     /// </summary>
-    public const int BlockSize = 4;
+    public const int BlockSize = 16;
     
     private readonly Arena _memorySpace;
     /// <summary>
     /// Root chunk. Once allocated, this pointer should stay the same
     /// </summary>
-    private ArenaPointer _first;
+    private Span _first;
     
     /// <summary>
     /// Cache of last chunk. This will start the same as _first,
     /// then move forward as chunks are allocated
     /// </summary>
-    private ArenaPointer _last;
+    private Span _last;
     
     /// <summary>
     /// Chunk where the read/write head is
     /// </summary>
-    private ArenaPointer _headBlock;
+    private Span _headBlock;
     
     /// <summary>
     /// The global index of the read/write head
@@ -38,7 +44,8 @@ public class LinkedBlockList32
     
     /// <summary>
     /// The offset within _headBlock where
-    /// the _headIndex is.
+    /// the _headIndex is, counted from zero
+    /// in increments of the size of a span.
     /// </summary>
     private uint _headOffset;
     
@@ -57,12 +64,12 @@ public class LinkedBlockList32
     /// Create a linked list in an arena.
     /// The list will initially have no chunks allocated
     /// </summary>
-    public LinkedBlockList32(Arena memorySpace)
+    public SpanList(Arena memorySpace)
     {
         _memorySpace = memorySpace;
-        _first = ArenaPointer.Null;
-        _last = ArenaPointer.Null;
-        _headBlock = ArenaPointer.Null;
+        _first = Span.Zero;
+        _last = Span.Zero;
+        _headBlock = Span.Zero;
         _headIndex = 0;
         _headOffset = 0;
         _headBlockNumber = 0;
@@ -70,17 +77,26 @@ public class LinkedBlockList32
     }
 
     /// <summary>
+    /// Describe the span list
+    /// </summary>
+    public override string ToString()
+    {
+        return $"{_first}..{_last}; count={_count}; Head: i={_headIndex}, b={_headBlock}, o={_headOffset};";
+    }
+
+    /// <summary>
     /// Allocate a new chunk, returning a pointer to it
     /// </summary>
     public void AddChunk()
     {
+        
         // each chunk is one uint larger, to hold a 'next' header
 
-        if (_first.IsNull) // initial chunk
+        if (_first.IsZero) // initial chunk
         {
-            _first = _memorySpace.Allocate((BlockSize + 1) * sizeof(uint));
+            _first = _memorySpace.Allocate(ChunkBytes);
             _last = _first;
-            _first.SetUInt32Idx(0, 0);
+            _first.ZeroAll();
             
             _count += BlockSize;
             
@@ -90,9 +106,10 @@ public class LinkedBlockList32
         }
         
         // subsequent chunks
-        if (_last.IsNull || _count < BlockSize) throw new Exception("Precondition fail");
+        if (_last.IsZero || _count < BlockSize) throw new Exception("Precondition fail");
         
-        var newChunk = _memorySpace.Allocate((BlockSize + 1) * sizeof(uint));
+        var newChunk = _memorySpace.Allocate(ChunkBytes);
+        newChunk.ZeroAll();
         _last.SetUInt32Idx(0, newChunk.Start); // set 'next' pointer of old last to new last
         _count += BlockSize;
         _last = newChunk; // update last pointer
@@ -139,7 +156,7 @@ public class LinkedBlockList32
         {
             var nextPtr = _headBlock.GetUInt32Idx(0);
             if (nextPtr == 0) break;
-            _headBlock = new ArenaPointer(_memorySpace, nextPtr, nextPtr+BlockSize);
+            _headBlock = new Span(_memorySpace, nextPtr, nextPtr + Int32ForData);
             _headBlockNumber++;
         }
 
@@ -155,13 +172,16 @@ public class LinkedBlockList32
     /// then advance the read/write head one position
     /// Return false if the head is not in a chunk
     /// </summary>
-    public bool Read(out uint value)
+    public bool Read(out Span value)
     {
-        value = 0;
+        value = Span.Zero;
         if (_headIndex >= _count) return false;
         if (! Seek(_headIndex)) return false;
         
-        value = _headBlock.GetUInt32Idx(_headOffset+1);
+        var location = (_headOffset * 2) + 1;
+        var start = _headBlock.GetUInt32Idx(location);
+        var end = _headBlock.GetUInt32Idx(location+1);
+        value = new Span(_memorySpace, start, end);
         _headIndex++;
         return true;
     }
@@ -171,12 +191,14 @@ public class LinkedBlockList32
     /// then advance the read/write head one position
     /// Return false if the head is not in a chunk
     /// </summary>
-    public bool Write(uint value)
+    public bool Write(Span value)
     {
         if (_headIndex >= _count) return false;
         if (! Seek(_headIndex)) return false;
         
-        _headBlock.SetUInt32Idx(_headOffset+1, value);
+        var location = (_headOffset * 2) + 1;
+        _headBlock.SetUInt32Idx(location, value.Start);
+        _headBlock.SetUInt32Idx(location+1, value.End);
         _headIndex++;
         return true;
     }
@@ -188,5 +210,38 @@ public class LinkedBlockList32
     public uint Count()
     {
         return _count;
+    }
+
+    /// <summary>
+    /// Return a new span list, removing the
+    /// first 'count' blocks. The new list
+    /// points to the same memory as the original.
+    /// </summary>
+    public SpanList Sublist(int count)
+    {
+        var start = 0;
+        var newFirst = _first;
+
+        while (start < count)
+        {
+            var nextPtr = newFirst.GetUInt32Idx(0);
+            if (nextPtr == 0) // can't find it
+            {
+                throw new Exception("Sublist excluded entire list");
+            }
+
+            newFirst = new Span(_memorySpace, nextPtr, nextPtr + Int32ForData);
+            start++;
+        }
+        
+        return new SpanList(_memorySpace){
+            _count = (uint)(_count - (BlockSize * count)),
+            _first = newFirst,
+            _headBlock = newFirst,
+            _headBlockNumber = 0,
+            _headIndex = 0,
+            _headOffset = 0,
+            _last = _last
+        };
     }
 }

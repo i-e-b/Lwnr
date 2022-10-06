@@ -27,13 +27,13 @@ public class Arena
     /// This will go into the <see cref="Data"/> list
     /// as a bunch of zeros
     /// </summary>
-    public ArenaPointer Allocate(uint byteCount)
+    public Span Allocate(uint byteCount)
     {
         if (byteCount > int.MaxValue) throw new Exception("Not supported");
         var start = Data.Count;
         byteCount += byteCount % 4;
         Data.AddRange(Enumerable.Repeat((UInt32)0, (int)(byteCount / 4)));
         var end = Data.Count - 1;
-        return new ArenaPointer(this, (uint)start, (uint)end);
+        return new Span(this, (uint)start, (uint)end);
     }
 }
