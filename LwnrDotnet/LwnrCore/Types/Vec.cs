@@ -91,6 +91,11 @@ public class Vec
     public bool Pop(out byte[] value)
     {
         value = Array.Empty<byte>();
+        
+        if (_elementCount < 1) return false; // no elements
+        
+        
+        
         return false;
     }
 
@@ -113,18 +118,20 @@ public class Vec
         var ok = _chunkList.Seek(whichChunk);
         if (!ok) throw new Exception($"Failed to seek chunk {whichChunk} in list {_chunkList}");
         
-        ok = _chunkList.Read(out var theChunk); // this is a span which is _elementSize
+        ok = _chunkList.Read(out var elementSpan); // this is a span which is _elementSize
         if (!ok) throw new Exception($"Failed to read chunk {whichChunk} in list {_chunkList}");
         
-        if (theChunk.IsZero) // need to allocate the data for its slots
+        if (elementSpan.IsZero) // need to allocate the data for its slots
         {
-            theChunk = _memory.Allocate(_elementSize);
+            elementSpan = _memory.Allocate(_elementSize);
+            
+            Console.WriteLine($"New Element[{whichChunk},{slotInChunk}] {elementSpan}");
             _chunkList.Seek(whichChunk);
-            _chunkList.Write(theChunk);
+            _chunkList.Write(elementSpan);
         }
 
         var offset = slotInChunk * _elementSize;
-        return theChunk.Subset(offset, _elementSize);
+        return elementSpan.Subset(offset, _elementSize);
     }
 
     /// <summary>
@@ -140,10 +147,12 @@ public class Vec
         }
         
         // add new block, add to chain.
-        _chunkList.AddChunk();
+        var chunk = _chunkList.AddChunk();
         _chunkCount++;
         
-        return Span.Zero;
+        Console.WriteLine($"New Block {chunk}");
+        
+        return chunk;
     }
 
     /// <summary>

@@ -10,11 +10,12 @@ public class VectorTests
     public void create_push_and_get_length()
     {
         var memory = new Arena();
-        var subject = new Vec(memory, 2);
         
-        Assert.That(subject.Count(), Is.EqualTo(0));
+        var subject = new Vec(memory, 2);
+        Console.WriteLine(memory.Describe());
         
         subject.Push(new byte[]{0x80,0x7f});
+        Console.WriteLine(memory.Describe());
         
         Assert.That(subject.Count(), Is.EqualTo(1));
         

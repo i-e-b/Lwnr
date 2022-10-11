@@ -86,7 +86,7 @@ public class SpanList
     /// <summary>
     /// Allocate a new chunk
     /// </summary>
-    public void AddChunk()
+    public Span AddChunk()
     {
         // each chunk is one uint larger, to hold a 'next' header
         if (_first.IsZero) // initial chunk
@@ -99,7 +99,7 @@ public class SpanList
             
             _headBlock = _first;
 
-            return;
+            return _first.Clone();
         }
         
         // subsequent chunks
@@ -110,6 +110,7 @@ public class SpanList
         _last.SetUInt32Idx(0, newChunk.Start); // set 'next' pointer of old last to new last
         _count += BlockSize;
         _last = newChunk; // update last pointer
+        return newChunk.Clone();
     }
 
     /// <summary>
@@ -153,7 +154,7 @@ public class SpanList
         {
             var nextPtr = _headBlock.GetUInt32Idx(0);
             if (nextPtr == 0) break;
-            _headBlock = new Span(_memorySpace, nextPtr, nextPtr + BytesForData);
+            _headBlock = new Span(_memorySpace, nextPtr, ChunkBytes);
             _headBlockNumber++;
         }
 
@@ -177,8 +178,8 @@ public class SpanList
         
         var location = (_headOffset * 2) + 1;
         var start = _headBlock.GetUInt32Idx(location);
-        var end = _headBlock.GetUInt32Idx(location+1);
-        value = new Span(_memorySpace, start, end);
+        var length = _headBlock.GetUInt32Idx(location+1);
+        value = new Span(_memorySpace, start, length);
         _headIndex++;
         return true;
     }
@@ -195,7 +196,7 @@ public class SpanList
         
         var location = (_headOffset * 2) + 1;
         _headBlock.SetUInt32Idx(location, value.Start);
-        _headBlock.SetUInt32Idx(location+1, value.End);
+        _headBlock.SetUInt32Idx(location+1, value.Length);
         _headIndex++;
         return true;
     }
@@ -227,7 +228,7 @@ public class SpanList
                 throw new Exception("Sublist excluded entire list");
             }
 
-            newFirst = new Span(_memorySpace, nextPtr, nextPtr + BytesForData);
+            newFirst = new Span(_memorySpace, nextPtr, ChunkBytes);
             start++;
         }
         

@@ -1,4 +1,6 @@
-﻿namespace LwnrCore.Types;
+﻿using LwnrCore.Helpers;
+
+namespace LwnrCore.Types;
 
 /// <summary>
 /// A growable zone of memory.
@@ -32,7 +34,15 @@ public class Arena
         if (byteCount > int.MaxValue) throw new Exception("Not supported");
         var start = Data.Count;
         Data.AddRange(Enumerable.Repeat((byte)0, (int)byteCount));
-        var end = Data.Count - 1;
-        return new Span(this, (uint)start, (uint)end);
+        return new Span(this, (uint)start, byteCount);
+    }
+
+    /// <summary>
+    /// Human readable summary
+    /// </summary>
+    public string Describe()
+    {
+        if (Data.Count <= 1024) return Bit.Describe("Data",Data);
+        return $"Total = {Bit.Human(Data.Count)}; Top 512={Bit.Describe("Data",Data.Take(512))}";
     }
 }

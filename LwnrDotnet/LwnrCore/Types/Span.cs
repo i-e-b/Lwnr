@@ -12,35 +12,55 @@ public class Span
     /// <summary> First byte of the data </summary>
     public readonly uint Start;
 
-    /// <summary> Last byte of the data </summary>
-    public readonly uint End;
+    /// <summary> Number of bytes in the span </summary>
+    public readonly uint Length;
+    
+    /// <summary> Last byte in the data </summary>
+    public uint End => Start + (Length - 1);
 
     /// <summary>
     /// String describing the range of this span
     /// </summary>
-    public override string ToString() => $"[{Start}-{End}| max={End-Start}]";
+    public override string ToString() => $"[{Length}]@{Start}-{End}";
 
     /// <summary>
     /// New pointer
     /// </summary>
-    public Span(Arena arena, uint start, uint end)
+    public Span(Arena arena, uint start, uint length)
     {
         Arena = arena;
         Start = start;
-        End = end;
+        Length = length;
+    }
+    
+    /// <summary>
+    /// New zero pointer
+    /// </summary>
+    protected Span(Arena arena)
+    {
+        Arena = arena;
+        Start = 0;
+        Length = 0;
     }
 
     private static readonly Arena _nothing = new() { IsNull = true };
 
+    private Span(Span other)
+    {
+        Arena = other.Arena;
+        Start = other.Start;
+        Length = other.Length;
+    }
+
     /// <summary>
     /// A pointer to nothing.
     /// </summary>
-    public static Span Zero => new(_nothing, 0, 0);
+    public static Span Zero => new(_nothing);
 
     /// <summary>
     /// Returns true if this pointer has a range of zero.
     /// </summary>
-    public bool IsZero => Start == 0 && End == 0;
+    public bool IsZero => Length < 1;
 
     /// <summary>
     /// Number of bytes to store the span.
@@ -92,12 +112,13 @@ public class Span
     /// </summary>
     public Span Subset(uint startOffset, uint length = 0)
     {
+        if (Length < 1) throw new Exception("Tried to subset a zero-size span");
         var newStart = Start + startOffset;
         var newEnd = length < 1 ? End : (newStart+length-1);
         
         if (newStart > End || newEnd > End) throw new Exception($"Subset out of bounds. Requested {newStart}..{newEnd} of {Start}..{End}");
         
-        return new Span(Arena, newStart, newEnd);
+        return new Span(Arena, newStart, length);
     }
 
     /// <summary>
@@ -159,4 +180,11 @@ public class Span
             Arena.Data[(int)i] = 0;
         }
     }
+
+    /// <summary>
+    /// Return a copy of the span.
+    /// Changes to the result span won't change
+    /// the source.
+    /// </summary>
+    public Span Clone() => new(this);
 }

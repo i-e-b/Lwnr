@@ -29,7 +29,7 @@ public class SpanListTests
         // Write some data
         ok = subject.Write(new Span(memory, 1, 2));
         Assert.That(ok, Is.True);
-        ok = subject.Write(new Span(memory, 2, 3));
+        ok = subject.Write(new Span(memory, 2, 2));
         Assert.That(ok, Is.True);
         
         // Seek back
@@ -61,7 +61,7 @@ public class SpanListTests
         for (uint i = 0; i < max; i++)
         {
             if (subject.Count() <= i) subject.AddChunk();
-            ok = subject.Write(new Span(memory, i+1, i+2));
+            ok = subject.Write(new Span(memory, i+1, 1));
             Assert.That(ok, Is.True, $"write {i}");
         }
         
@@ -95,7 +95,7 @@ public class SpanListTests
         for (uint i = 0; i < max; i++)
         {
             if (subject.Count() <= i) subject.AddChunk();
-            subject.Write(new Span(memory, i+1, i+2));
+            subject.Write(new Span(memory, i+1, 2));
         }
         
         subject = subject.Sublist(1); // chop off first chunk
