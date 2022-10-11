@@ -99,12 +99,12 @@ The runtime is a simple interpreter of the AST for the same reasons.
 
 ```
 (def
-  database-query (into query)
+  database-query (target-container query)
   
   (set conn connect-to-database) # creates and opens db connection
   
   . . .
-  (alias item (into new)) # 'item' is NOT in our scope, as it's part of 'into', and aliased here
+  (alias item (target-container new)) # 'item' is NOT in our scope, as it's part of 'into', and aliased here
   
   (conn :query-into item) # alias passed in, as a reference to a fixed primitive
   

@@ -122,7 +122,12 @@ public enum SyntaxNodeType
     List,
     
     /// <summary>
+    /// A namespace/object scope resolution: 'thing@scope'
+    /// </summary>
+    Scope,
+    
+    /// <summary>
     /// Some other kind of token
     /// </summary>
-    Token
+    Token,
 }

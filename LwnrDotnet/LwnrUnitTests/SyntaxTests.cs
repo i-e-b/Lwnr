@@ -29,6 +29,63 @@ public class SyntaxTests
     }
 
     [Test]
+    public void at_scope_symbol()
+    {
+        // this is the same as 'scope.thing' in a Cx/Java like.
+        const string scoped = @"
+(set var thing@scope)
+";
+
+        var tree = Parser.Parse(scoped);
+
+        Console.WriteLine(tree.Describe());
+
+        Assert.That(tree.IsValid, Is.True, "IsValid");
+        Assert.That(tree.Type, Is.EqualTo(SyntaxNodeType.Root), "root type");
+        Assert.That(tree.Items.Count, Is.EqualTo(1), "root item count");
+        Assert.That(tree.Items[0].Type, Is.EqualTo(SyntaxNodeType.List), "leaf item type");
+        Assert.That(tree.Items[0].Items.Count, Is.EqualTo(3), "leaf item count");
+
+        var scopeCall = tree.Items[0].Items[2];
+        Assert.That(scopeCall.Type, Is.EqualTo(SyntaxNodeType.Scope), "scope call type");
+        Assert.That(scopeCall.Items.Count, Is.EqualTo(2), "scope item count");
+        
+        Assert.That(scopeCall.Items[0].TokenType, Is.EqualTo(TokenType.Atom));
+        Assert.That(scopeCall.Items[0].Value, Is.EqualTo("thing"));
+        
+        Assert.That(scopeCall.Items[1].TokenType, Is.EqualTo(TokenType.Atom));
+        Assert.That(scopeCall.Items[1].Value, Is.EqualTo("scope"));
+        
+        var rendered = Parser.Render(tree);
+
+        Assert.That(rendered.Trim(), Is.EqualTo(scoped.Trim()), "rendered output");
+    }
+    
+    [Test]
+    public void comment_test()
+    {
+        const string helloWorld = @"
+// comment on its own line
+(log `hello, world`) // this is a line comment
+(ping pong) // different line
+";
+
+        var tree = Parser.Parse(helloWorld);
+
+        Console.WriteLine(tree.Describe());
+
+        Assert.That(tree.IsValid, Is.True, "IsValid");
+        Assert.That(tree.Type, Is.EqualTo(SyntaxNodeType.Root), "root type");
+        Assert.That(tree.Items.Count, Is.EqualTo(1), "root item count");
+        Assert.That(tree.Items[0].Type, Is.EqualTo(SyntaxNodeType.List), "base item type");
+        Assert.That(tree.Items[0].Items.Count, Is.EqualTo(5), "base item count");
+
+        var rendered = Parser.Render(tree);
+
+        Assert.That(rendered.Trim(), Is.EqualTo(helloWorld.Trim()), "rendered output");
+    }
+    
+    [Test]
     public void numbers_and_empty_stuff_tests()
     {
         const string helloWorld = @"
@@ -106,6 +163,45 @@ public class SyntaxTests
         Console.WriteLine(tree.Describe());
 
         Assert.That(tree.IsValid, Is.False, "IsValid");
+    }
+    
+    [Test]
+    public void can_handle_more_complex_structures()
+    {
+        const string nonTrivial = @"
+(def is-even (value result) // number -> maybe
+    (if (= 0 (value % 2))
+        then:(result set true)
+        else:(result clear)
+    )
+)
+
+(def pick-even (source dest)
+    (alias cursor (source items))
+    (set item new@maybe)
+    (while (cursor item)
+        (set keep new@maybe)
+        (is-even item keep)
+        (if keep
+            (dest add copy@item)
+        )
+    )
+)
+";
+
+        var tree = Parser.Parse(nonTrivial);
+
+        Console.WriteLine(tree.Describe());
+
+        Assert.That(tree.IsValid, Is.True, "IsValid");
+        Assert.That(tree.Type, Is.EqualTo(SyntaxNodeType.Root), "root type");
+        Assert.That(tree.Items.Count, Is.EqualTo(1), "root item count");
+        Assert.That(tree.Items[0].Type, Is.EqualTo(SyntaxNodeType.List), "leaf item type");
+        Assert.That(tree.Items[0].Items.Count, Is.EqualTo(6), "leaf item count");
+
+        var rendered = Parser.Render(tree);
+
+        Assert.That(rendered.Trim(), Is.EqualTo(nonTrivial.Trim()), "rendered output");
     }
 
 }

@@ -1,5 +1,4 @@
 ﻿using LwnrCore.Parser;
-using LwnrCore.Types;
 
 namespace LwnrCore.Interpreter;
 
