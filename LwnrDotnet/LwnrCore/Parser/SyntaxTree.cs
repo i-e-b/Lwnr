@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Text;
+﻿using System.Text;
 
 namespace LwnrCore.Parser;
 
@@ -36,6 +35,11 @@ public class SyntaxTree
     /// Token value of this node
     /// </summary>
     public string? Value { get; private init; }
+    
+    /// <summary>
+    /// A label added to this node, if any
+    /// </summary>
+    public string? Label { get; set; }
 
     /// <summary>
     /// Type of token, if any
@@ -55,12 +59,13 @@ public class SyntaxTree
     /// <summary>
     /// Create a new node that is a child of this one.
     /// </summary>
-    public SyntaxTree AddListNode(int start)
+    public SyntaxTree AddListNode(int start, string? label)
     {
         var child = new SyntaxTree{
             Parent = this,
             Type = SyntaxNodeType.List,
             TokenType = TokenType.Invalid,
+            Label = label,
             Start = start
         };
         Items.Add(child);
@@ -71,12 +76,13 @@ public class SyntaxTree
     /// Add a new leaf node with a token value and type,
     /// to represent program data.
     /// </summary>
-    public void AddToken(string token, TokenType type, int start, int end)
+    public void AddToken(string token, TokenType type, int start, int end, string? label)
     {
         var child = new SyntaxTree{
             Parent = this,
             Type = SyntaxNodeType.Token,
             Value = token,
+            Label = label,
             TokenType = type,
             Start = start,
             End = end
@@ -137,6 +143,11 @@ public class SyntaxTree
             sb.Append($" {node.TokenType.ToString()}: {node.Value}");
         }
 
+        if (node.Label is not null)
+        {
+            sb.Append($" label={node.Label}");
+        }
+
         foreach (var item in node.Items)
         {
             DescribeRecursive(item, sb, depth + 1);
@@ -152,6 +163,7 @@ public class SyntaxTree
     /// Describe the node position in the input
     /// </summary>
     public string Position() => End > Start ? $"{Start}..{End}" : $"{Start}..?";
+
 }
 
 /// <summary>
@@ -168,11 +180,6 @@ public enum SyntaxNodeType
     /// An S-Expression list
     /// </summary>
     List,
-    
-    /// <summary>
-    /// A namespace/object scope resolution: 'thing@scope'
-    /// </summary>
-    Scope,
     
     /// <summary>
     /// Some other kind of token

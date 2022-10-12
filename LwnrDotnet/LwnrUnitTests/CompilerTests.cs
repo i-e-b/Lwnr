@@ -26,7 +26,7 @@ public class CompilerTests
     {
         const string basicProgram = @"
 (def main (stdin stdout)
-    (stdout log `hello, world`)
+    (log stdout `hello, world`)
 )
 ";
 
@@ -38,5 +38,30 @@ public class CompilerTests
         Assert.That(ir.Instructions.Count, Is.Not.Zero);
         
         Console.Write(ir.Describe());
+        Assert.Inconclusive("needs more test");
+    }
+    
+    [Test]
+    public void positional_arguments()
+    {
+        const string basicProgram = @"
+(def test (one two three))
+(def main ()
+    (test three:`three` two:`two` one:(reverse `eno`))
+)
+";
+
+        var tree = Parser.Parse(basicProgram);
+        var subject = new Compiler(tree);
+        var ir = subject.Compile();
+        
+        Console.Write(ir.Describe());
+        
+        Assert.That(ir, Is.Not.Null);
+        Assert.That(ir.Instructions.Count, Is.Not.Zero);
+        
+        // TODO: the call to 'test' should have arguments indexed correctly
+        // TODO: define what happens with "(test `one` three:`three` `two`)"?
+        Assert.Inconclusive("needs more test");
     }
 }

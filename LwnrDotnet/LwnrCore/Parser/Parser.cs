@@ -16,6 +16,7 @@ public static class Parser
         var outp = new SyntaxTree();
         
         var target = outp;
+        string? label = null;
         var cursor = new ParserCursor(input, 0);
 
         while (cursor.HasSome())
@@ -29,33 +30,53 @@ public static class Parser
             {
                 // categorise token
                 case TokenType.Invalid:
-                    target.AddToken(token, tokenType, start, end);
+                    target.AddToken(token, tokenType, start, end, label);
+                    label = null;
                     outp.IsValid = false;
                     break;
                 
                 case TokenType.OpenParen: // go deeper
-                    target = target.AddListNode(start);
+                    target = target.AddListNode(start, label);
+                    label = null;
                     break;
                 
                 case TokenType.CloseParen when target.Parent is null:// too many close paren
                     outp.IsValid = false;
+                    label = null;
                     return outp;
                 
                 case TokenType.CloseParen: // up
                     target.End = end;
                     target = target.Parent;
+                    if (label is not null) outp.IsValid = false; // labeling nothing?
                     break;
                 
                 case TokenType.EndOfInput:
-                    outp.IsValid = target.Parent is null; // false if not enough close paren
+                    if (target.Parent is not null) outp.IsValid = false; // false if not enough close paren
+                    if (label is not null) outp.IsValid = false; // labeling nothing?
                     return outp;
 
                 case TokenType.LiteralString:
                 case TokenType.LiteralNumber:
-                case TokenType.Atom:
-                    target.AddToken(token, tokenType, start, end);
+                    target.AddToken(token, tokenType, start, end, label);
+                    label = null;
                     break;
-                
+
+                case TokenType.Atom:
+                {
+                    if (token.EndsWith(':')) // this is a label. Append to next token or list.
+                    {
+                        label = token[..^1];
+                    }
+                    else
+                    {
+                        target.AddToken(token, tokenType, start, end, label);
+                        label = null;
+                    }
+
+                    break;
+                }
+
                 case TokenType.Comment:
                     target.AddMeta(token, tokenType, start, end);
                     break;
@@ -91,12 +112,14 @@ public static class Parser
             switch (item.Type)
             {
                 case SyntaxNodeType.List:
+                    if (item.Label is not null) sb.Append($"{item.Label}: ");
                     sb.Append('(');
                     RenderRecursive(item, sb);
                     sb.Append(')');
                     break;
                 
                 case SyntaxNodeType.Token:
+                    if (item.Label is not null) sb.Append($"{item.Label}: ");
                     RenderToken(item, sb);
                     break;
                 

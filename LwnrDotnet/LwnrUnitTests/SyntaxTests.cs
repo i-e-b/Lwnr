@@ -129,7 +129,53 @@ public class SyntaxTests
 
         Assert.That(tree.IsValid, Is.False, "IsValid");
     }
-    
+
+    [Test]
+    public void colon_marks_a_named_argument()
+    {
+        // 'if' taking 3 arguments: predicate, then, else.
+        // With a prefix like 'name:', we allow slightly
+        // clearer syntax, and changing argument order
+        const string namedArgCall = @"
+(if myPredicate
+    then:(result set true)
+    else:(result clear)
+)
+";
+        var tree = Parser.Parse(namedArgCall);
+
+        Console.WriteLine(Parser.Render(tree));
+        Console.WriteLine(tree.Describe());
+
+        Assert.That(tree.IsValid, Is.True, "IsValid");
+        Assert.That(tree.Type, Is.EqualTo(SyntaxNodeType.Root), "root type");
+        Assert.That(tree.Items.Count, Is.EqualTo(1), "root item count");
+        
+        var ifList = tree.Items[0];
+        Assert.That(ifList.Type, Is.EqualTo(SyntaxNodeType.List), "leaf item type");
+        Assert.That(ifList.Items.Count, Is.EqualTo(4), "leaf item count");
+        
+        var ifName = ifList.Items[0];
+        Assert.That(ifName.Type, Is.EqualTo(SyntaxNodeType.Token), "target type");
+        Assert.That(ifName.TokenType, Is.EqualTo(TokenType.Atom), "target sub-type");
+        Assert.That(ifName.Value, Is.EqualTo("if"), "target value");
+        
+        var predName = ifList.Items[1];
+        Assert.That(predName.Type, Is.EqualTo(SyntaxNodeType.Token), "predicate type");
+        Assert.That(predName.TokenType, Is.EqualTo(TokenType.Atom), "predicate sub-type");
+        Assert.That(predName.Value, Is.EqualTo("myPredicate"), "predicate value");
+        
+        var thenList = ifList.Items[2];
+        Assert.That(thenList.Type, Is.EqualTo(SyntaxNodeType.List), "then type");
+        Assert.That(thenList.Label, Is.EqualTo("then"), "then label");
+        Assert.That(thenList.Items.Count, Is.EqualTo(3), "then value");
+        
+        var elseList = ifList.Items[3];
+        Assert.That(elseList.Type, Is.EqualTo(SyntaxNodeType.List), "else type");
+        Assert.That(elseList.Label, Is.EqualTo("else"), "else label");
+        Assert.That(elseList.Items.Count, Is.EqualTo(2), "else value");
+    }
+
     [Test]
     public void can_handle_more_complex_structures()
     {
