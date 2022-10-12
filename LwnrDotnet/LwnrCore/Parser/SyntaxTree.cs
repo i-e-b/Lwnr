@@ -66,13 +66,30 @@ public class SyntaxTree
     }
 
     /// <summary>
-    /// Add a new leaf node with a token value and type
+    /// Add a new leaf node with a token value and type,
+    /// to represent program data.
     /// </summary>
     public void AddToken(string token, TokenType type)
     {
         var child = new SyntaxTree{
             Parent = this,
             Type = SyntaxNodeType.Token,
+            Value = token,
+            TokenType = type
+        };
+        Items.Add(child);
+    }
+    
+    /// <summary>
+    /// Add a new leaf node with a token value and type,
+    /// to represent non-program data such as whitespace and
+    /// comments
+    /// </summary>
+    public void AddMeta(string token, TokenType type)
+    {
+        var child = new SyntaxTree{
+            Parent = this,
+            Type = SyntaxNodeType.Meta,
             Value = token,
             TokenType = type
         };
@@ -130,4 +147,9 @@ public enum SyntaxNodeType
     /// Some other kind of token
     /// </summary>
     Token,
+    
+    /// <summary>
+    /// Whitespace, comments, etc
+    /// </summary>
+    Meta
 }

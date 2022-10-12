@@ -27,6 +27,12 @@ public class ParserCursor
         if (_idx >= _input.Length) _on = '\0';
         else _on = _input[_idx];
     }
+    
+    private char Peek()
+    {
+        if (_idx >= _input.Length - 1) return '\0';
+        return _input[_idx + 1];
+    }
 
     /// <summary>
     /// Move the cursor forward
@@ -78,6 +84,16 @@ public class ParserCursor
                 var str = ReadQuotedString(out var complete);
                 if (!complete) type = TokenType.Invalid;
                 return str;
+            }
+            case '/':
+            {
+                if (Peek() == '/') // double slash
+                {
+                    type = TokenType.Comment;
+                    return ReadLineComment();
+                }
+
+                break;
             }
             case '\0':
             {
@@ -147,6 +163,42 @@ public class ParserCursor
 
         Step(); // eat the close quote
         complete = true;
+        return sb.ToString();
+    }
+    
+    /// <summary>
+    /// Read from the start of a comment to either end of line
+    /// or end of stream.
+    /// </summary>
+    private string ReadLineComment()
+    {
+        if (_on != '/') throw new Exception("Lost the start of a comment?");
+        
+        var sb = new StringBuilder();
+        
+        sb.Append(_on);
+        Step();
+
+        while (_on != '\r' && _on != '\n')
+        {
+            if (_on == '\0')
+            {
+                return sb.ToString();
+            }
+            
+            sb.Append(_on);
+            Step();
+        }
+        
+        // add the newline into the comment
+        sb.Append(_on);
+        if (_on == '\r' && Peek() == '\n')
+        {
+            Step();
+            sb.Append(_on);
+        }
+        Step(); // eat last char
+
         return sb.ToString();
     }
 

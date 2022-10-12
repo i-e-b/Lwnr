@@ -38,5 +38,10 @@ public enum TokenType
     /// <summary>
     /// ')' character
     /// </summary>
-    CloseParen = 6
+    CloseParen = 6,
+    
+    /// <summary>
+    /// A comment until end of line
+    /// </summary>
+    Comment = 7
 }

@@ -53,7 +53,11 @@ public static class Parser
                     target.AddToken(token, tokenType);
                     break;
                 
-                default: throw new Exception("Unexpected token type");
+                case TokenType.Comment:
+                    target.AddMeta(token, tokenType);
+                    break;
+                
+                default: throw new Exception($"Unexpected token type '{tokenType.ToString()}'");
             }
         }
 
@@ -79,6 +83,8 @@ public static class Parser
         foreach (var item in input.Items)
         {
             if (!first) sb.Append(' ');
+            first = false;
+            
             switch (item.Type)
             {
                 case SyntaxNodeType.List:
@@ -91,10 +97,14 @@ public static class Parser
                     RenderToken(item, sb);
                     break;
                 
+                case SyntaxNodeType.Meta:
+                    sb.Append(item.Value);
+                    if (item.TokenType == TokenType.Comment) first = true;
+                    break;
+                
                 case SyntaxNodeType.Root: // there should be only one root node
                 default: throw new Exception("Unexpected syntax node type");
             }
-            first = false;
         }
     }
 
@@ -120,10 +130,14 @@ public static class Parser
                 sb.Append(item.Value);
                 break;
             
+            case TokenType.Comment:
+                sb.Append(item.Value);
+                break;
+            
             case TokenType.OpenParen:
             case TokenType.CloseParen:
             default:
-                throw new Exception("Unexpected token type");
+                throw new Exception($"Unexpected token type '{item.TokenType.ToString()}'");
         }
     }
 }
