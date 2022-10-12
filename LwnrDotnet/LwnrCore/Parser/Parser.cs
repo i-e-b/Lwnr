@@ -21,18 +21,20 @@ public static class Parser
         while (cursor.HasSome())
         {
             // read next token
+            var start = cursor.Position();
             var token = cursor.ReadToken(out var tokenType);
-
+            var end = cursor.Position();
+            
             switch (tokenType)
             {
                 // categorise token
                 case TokenType.Invalid:
-                    target.AddToken(token, tokenType);
+                    target.AddToken(token, tokenType, start, end);
                     outp.IsValid = false;
                     break;
                 
                 case TokenType.OpenParen: // go deeper
-                    target = target.AddListNode();
+                    target = target.AddListNode(start);
                     break;
                 
                 case TokenType.CloseParen when target.Parent is null:// too many close paren
@@ -40,6 +42,7 @@ public static class Parser
                     return outp;
                 
                 case TokenType.CloseParen: // up
+                    target.End = end;
                     target = target.Parent;
                     break;
                 
@@ -50,11 +53,11 @@ public static class Parser
                 case TokenType.LiteralString:
                 case TokenType.LiteralNumber:
                 case TokenType.Atom:
-                    target.AddToken(token, tokenType);
+                    target.AddToken(token, tokenType, start, end);
                     break;
                 
                 case TokenType.Comment:
-                    target.AddMeta(token, tokenType);
+                    target.AddMeta(token, tokenType, start, end);
                     break;
                 
                 default: throw new Exception($"Unexpected token type '{tokenType.ToString()}'");

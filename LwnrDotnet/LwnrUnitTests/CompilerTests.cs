@@ -1,11 +1,11 @@
-﻿using LwnrCore.Interpreter;
+﻿using LwnrCore.Compiler;
 using LwnrCore.Parser;
 using NUnit.Framework;
 
 namespace LwnrUnitTests;
 
 [TestFixture]
-public class InterpreterTests
+public class CompilerTests
 {
     [Test]
     public void program_must_have_main()
@@ -15,7 +15,7 @@ public class InterpreterTests
         var tree = Parser.Parse(basicProgram);
         var err = Assert.Throws<Exception>(() =>
         {
-            var _ = new BasicInterpreter(tree);
+            var _ = new Compiler(tree);
         });
         
         Assert.That(err?.Message, Contains.Substring("must have 'main' function"));
@@ -31,22 +31,12 @@ public class InterpreterTests
 ";
 
         var tree = Parser.Parse(basicProgram);
-        var subject = new BasicInterpreter(tree);
+        var subject = new Compiler(tree);
+        var ir = subject.Compile();
         
-        int i;
-        var complete = false;
-        for (i = 0; i < 1000; i++)
-        {
-            if (!subject.Step())
-            {
-                complete = true;
-                break;
-            }
-        }
+        Assert.That(ir, Is.Not.Null);
+        Assert.That(ir.Instructions.Count, Is.Not.Zero);
         
-        Assert.That(complete, Is.True, "ran to completion");
-        
-        var result = subject.ReadFromOutput();
-        Assert.That(result, Is.EqualTo("hello, world"));
+        Console.Write(ir.Describe());
     }
 }

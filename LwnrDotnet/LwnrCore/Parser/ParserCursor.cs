@@ -225,4 +225,9 @@ public class ParserCursor
     {
         return _on != '\0';
     }
+
+    /// <summary>
+    /// character-wise position in input
+    /// </summary>
+    public int Position() => _idx;
 }

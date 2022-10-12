@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections;
+using System.Text;
 
 namespace LwnrCore.Parser;
 
@@ -54,12 +55,13 @@ public class SyntaxTree
     /// <summary>
     /// Create a new node that is a child of this one.
     /// </summary>
-    public SyntaxTree AddListNode()
+    public SyntaxTree AddListNode(int start)
     {
         var child = new SyntaxTree{
             Parent = this,
             Type = SyntaxNodeType.List,
-            TokenType = TokenType.Invalid
+            TokenType = TokenType.Invalid,
+            Start = start
         };
         Items.Add(child);
         return child;
@@ -69,29 +71,48 @@ public class SyntaxTree
     /// Add a new leaf node with a token value and type,
     /// to represent program data.
     /// </summary>
-    public void AddToken(string token, TokenType type)
+    public void AddToken(string token, TokenType type, int start, int end)
     {
         var child = new SyntaxTree{
             Parent = this,
             Type = SyntaxNodeType.Token,
             Value = token,
-            TokenType = type
+            TokenType = type,
+            Start = start,
+            End = end
         };
         Items.Add(child);
     }
-    
+
+    /// <summary>
+    /// Position in input that this token ended
+    /// </summary>
+    public int End { get; set; }
+
+    /// <summary>
+    /// Position in input that this token started
+    /// </summary>
+    public int Start { get; set; }
+
+    /// <summary>
+    /// <see cref="Items"/> with meta-information (comments etc.) filtered out.
+    /// </summary>
+    public IEnumerable<SyntaxTree> ProgramItems =>  Items.Where(i=>i.Type != SyntaxNodeType.Meta); 
+
     /// <summary>
     /// Add a new leaf node with a token value and type,
     /// to represent non-program data such as whitespace and
     /// comments
     /// </summary>
-    public void AddMeta(string token, TokenType type)
+    public void AddMeta(string token, TokenType type, int start, int end)
     {
         var child = new SyntaxTree{
             Parent = this,
             Type = SyntaxNodeType.Meta,
             Value = token,
-            TokenType = type
+            TokenType = type,
+            Start = start,
+            End = end
         };
         Items.Add(child);
     }
@@ -125,10 +146,12 @@ public class SyntaxTree
     /// <summary>
     /// Returns true if this tree node is an atom with the given name
     /// </summary>
-    public bool IsAtom(string name)
-    {
-        return Type == SyntaxNodeType.Token && TokenType == TokenType.Atom && Value == name;
-    }
+    public bool IsAtom(string name) => Type == SyntaxNodeType.Token && TokenType == TokenType.Atom && Value == name;
+
+    /// <summary>
+    /// Describe the node position in the input
+    /// </summary>
+    public string Position() => End > Start ? $"{Start}..{End}" : $"{Start}..?";
 }
 
 /// <summary>
