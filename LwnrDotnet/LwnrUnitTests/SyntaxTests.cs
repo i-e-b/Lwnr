@@ -169,7 +169,7 @@ public class SyntaxTests
         Assert.That(tree.Items[1].Items.Count, Is.EqualTo(6), "leaf item count");
 
         // TODO: indent in render
-        //var rendered = Parser.Render(tree);
+        Console.WriteLine(Parser.Render(tree));
         //Assert.That(rendered.Trim(), Is.EqualTo(nonTrivial.Trim()), "rendered output");
     }
 

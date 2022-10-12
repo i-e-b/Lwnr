@@ -121,6 +121,14 @@ public class SyntaxTree
             DescribeRecursive(item, sb, depth + 1);
         }
     }
+    
+    /// <summary>
+    /// Returns true if this tree node is an atom with the given name
+    /// </summary>
+    public bool IsAtom(string name)
+    {
+        return Type == SyntaxNodeType.Token && TokenType == TokenType.Atom && Value == name;
+    }
 }
 
 /// <summary>

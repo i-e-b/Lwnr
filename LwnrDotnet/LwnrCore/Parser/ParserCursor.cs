@@ -128,9 +128,12 @@ public class ParserCursor
         if (double.TryParse(value, NumberStyles.Float, null, out _)) return true;
         
         // maybe a different base?
-        if (value.StartsWith("0x") || value.StartsWith("0b")) value = value.Substring(2);
-        if (int.TryParse(value, NumberStyles.HexNumber, null, out _)) return true;
-        
+        if (value.StartsWith("0x"))
+        {
+            value = value.Substring(2);
+            if (int.TryParse(value, NumberStyles.HexNumber, null, out _)) return true;
+        }
+
         return false;
     }
 
