@@ -6,14 +6,14 @@ namespace LwnrCore.Compiler;
 /// A very simple AST-walking compiler.
 /// It will be slow, but that's not currently the point.
 /// </summary>
-public class Compiler
+public class CompilerPass1
 {
     private readonly Dictionary<string, SyntaxTree> _functions;
 
     /// <summary>
     /// Prepare an interpreter for a program
     /// </summary>
-    public Compiler(SyntaxTree program)
+    public CompilerPass1(SyntaxTree program)
     {
         if (!program.IsValid) throw new Exception("Can't run an invalid program");
         
@@ -99,41 +99,74 @@ public class Compiler
             index++;
         }
         
+        var useScope = false;
+        
         // each item at this level should be either:
         // - a call to a built-in
         // - a call to a defined function
         for (int idx = 3; idx < list.Count; idx++)
         {
-            var callNode = list[idx];
-            if (callNode.Type != SyntaxNodeType.List) throw new Exception($"Invalid call at {callNode.Position()}. Expected (func ...), got {callNode.Describe()}");
-            if (!callNode.ProgramItems.Any()) throw new Exception($"Invalid call at {callNode.Position()}. Empty list. Expected (func ...), got {callNode.Describe()}");
-            var call = callNode.ProgramItems.ToList();
-            
-            var target = call[0];
-            if (target.Type != SyntaxNodeType.Token || target.TokenType != TokenType.Atom)
-                throw new Exception($"Invalid call at {target.Position()}. No target name. Expected (func ...), got {target.Describe()}");
-            if (string.IsNullOrWhiteSpace(target.Value)) throw new Exception("Internal error: empty target");
-            
-            subProgram.StartArguments();
-            var paramIdx = 0;
-            var parameters = call.Skip(1).ToList();
-            foreach (var param in parameters)
-            {
-                if (param.Type == SyntaxNodeType.List) subProgram.QuoteParameter(param, paramIdx);
-                else if (param.Type == SyntaxNodeType.Token)
-                {
-                    if (string.IsNullOrWhiteSpace(param.Value)) throw new Exception("Internal error: empty token");
-                    if (param.TokenType == TokenType.Atom) subProgram.NameParameter(param.Value, paramIdx);
-                    else subProgram.ValueParameter(param.Value, paramIdx);
-                }
-                else throw new Exception($"Invalid parameter at {param.Position()}. Expected value, name or quote; got {param.Describe()}");
-                
-                paramIdx++;
-            }
-            
-            subProgram.CallFunction(target.Value);
+            CompileFunctionCall(list, idx, ref useScope, subProgram);
         }
         
-        ir.MergeAsFunction(name, subProgram);
+        ir.MergeAsFunction(name, subProgram, useScope);
+    }
+
+    private void CompileFunctionCall(List<SyntaxTree> list, int idx, ref bool useScope, IntermediaryRepresentation subProgram)
+    {
+        var callNode = list[idx];
+        if (callNode.Type != SyntaxNodeType.List) throw new Exception($"Invalid call at {callNode.Position()}. Expected (func ...), got {callNode.Describe()}");
+        if (!callNode.ProgramItems.Any()) throw new Exception($"Invalid call at {callNode.Position()}. Empty list. Expected (func ...), got {callNode.Describe()}");
+        var call = callNode.ProgramItems.ToList();
+
+        var target = call[0];
+        if (target.Type != SyntaxNodeType.Token || target.TokenType != TokenType.Atom)
+            throw new Exception($"Invalid call at {target.Position()}. No target name. Expected (func ...), got {target.Describe()}");
+        if (string.IsNullOrWhiteSpace(target.Value)) throw new Exception("Internal error: empty target");
+        
+        // if there is a call to 'new', the container function needs a scope
+        if (target.Value == "new") useScope = true;
+
+        subProgram.StartArguments();
+        var paramIdx = 0;
+        var parameters = call.Skip(1).ToList();
+        foreach (var param in parameters)
+        {
+            if (param.Type == SyntaxNodeType.List) subProgram.QuoteParameter(param, paramIdx);
+            else if (param.Type == SyntaxNodeType.Token)
+            {
+                if (!string.IsNullOrWhiteSpace(param.Label)) // parameter is labelled.
+                {
+                    paramIdx = GetParameterIndex(param.Label, target.Value, param);
+                }
+
+                if (string.IsNullOrWhiteSpace(param.Value)) throw new Exception("Internal error: empty token");
+                if (param.TokenType == TokenType.Atom) subProgram.NameParameter(param.Value, paramIdx);
+                else subProgram.ValueParameter(param.Value, paramIdx);
+            }
+            else throw new Exception($"Invalid parameter at {param.Position()}. Expected value, name or quote; got {param.Describe()}");
+
+            paramIdx++;
+        }
+
+        subProgram.CallFunction(target.Value);
+    }
+
+    private int GetParameterIndex(string argName, string funcName, SyntaxTree declared)
+    {
+        if (!_functions.ContainsKey(funcName)) throw new Exception($"No such function declared '{funcName}'. At {declared.Position()}");
+        
+        var tree = _functions[funcName];
+        if (tree.ProgramItems.Count() < 3) throw new Exception($"Invalid function definition at {tree.Position()}, no argument list found");
+        
+        var argNode = tree.Items[2];
+        if (argNode.Type != SyntaxNodeType.List) throw new Exception($"Invalid function definition at {argNode.Position()}. Expected argument list '(...)', got {argNode.Describe()}");
+        
+        var args = argNode.ProgramItems.ToList();
+        for (int i = 0; i < args.Count; i++)
+        {
+            if (args[i].Value == argName) return i;
+        }
+        throw new Exception($"Unknown argument '{argName}' of function '{funcName}' referenced at {declared.Position()}");
     }
 }

@@ -21,13 +21,23 @@ public class IntermediaryRepresentation
     /// <summary>
     /// Add a sub-program as a named function
     /// </summary>
-    public void MergeAsFunction(string name, IntermediaryRepresentation subProgram)
+    public void MergeAsFunction(string name, IntermediaryRepresentation subProgram, bool useScope)
     {
         FunctionOffsets.Add(name, Instructions.Count);
+        
+        if (useScope)Instructions.Add(new Instruction{Command = IrCmdType.PushScope});
+        
         foreach (var instruction in subProgram.Instructions)
         {
+            if (instruction.Command == IrCmdType.EndOfFunction && useScope)
+            {
+                Instructions.Add(new Instruction{Command = IrCmdType.PopScope});
+            }
+
             Instructions.Add(instruction);
         }
+        
+        if (useScope) Instructions.Add(new Instruction{Command = IrCmdType.PopScope});
         Instructions.Add(new Instruction{Command = IrCmdType.EndOfFunction});
     }
 
@@ -72,7 +82,8 @@ public class IntermediaryRepresentation
     /// </summary>
     public void QuoteParameter(SyntaxTree treeNode, int paramIdx)
     {
-        throw new NotImplementedException();
+        // Quotations can either be inputs to macros, or lambda functions.
+        Instructions.Add(new Instruction { Command = IrCmdType.Quote, Arguments = new[] { paramIdx.ToString() }, Tree = treeNode });
     }
 
     /// <summary>
@@ -110,6 +121,11 @@ public class Instruction
 
     /// <summary> Arguments </summary>
     public string[] Arguments { get; set; }=Array.Empty<string>();
+
+    /// <summary>
+    /// Syntax sub-tree if this is a quotation
+    /// </summary>
+    public SyntaxTree? Tree { get; set; }
 }
 
 /// <summary>
@@ -153,5 +169,23 @@ public enum IrCmdType
     /// <summary>
     /// Call a function or built-in
     /// </summary>
-    Call = 6
+    Call = 6,
+    
+    /// <summary>
+    /// Quotation of a syntax tree.
+    /// Must be resolved to something else before compilation is complete
+    /// </summary>
+    Quote = 7,
+    
+    /// <summary>
+    /// Start a new resource scope.
+    /// Happens in functions that use 'new'
+    /// </summary>
+    PushScope = 8,
+    
+    /// <summary>
+    /// End a resource scope.
+    /// Happens in function that use 'new'
+    /// </summary>
+    PopScope = 9
 }
