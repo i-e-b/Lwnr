@@ -10,6 +10,12 @@ public class CompilerPass1
 {
     private readonly Dictionary<string, SyntaxTree> _functions;
 
+    private readonly Dictionary<string, Dictionary<string, int>> _builtInArgs = new()
+    {
+        { "new", new Dictionary<string, int> { { "type", 0 }, { "name", 1 } } },
+        { "log", new Dictionary<string, int> { { "target", 0 } } }
+    };
+
     /// <summary>
     /// Prepare an interpreter for a program
     /// </summary>
@@ -125,19 +131,58 @@ public class CompilerPass1
         if (string.IsNullOrWhiteSpace(target.Value)) throw new Exception("Internal error: empty target");
         
         // if there is a call to 'new', the container function needs a scope
-        if (target.Value == "new") useScope = true;
+        var targetName = target.Value;
+        if (targetName == "new") useScope = true; // the outer lexical scope is also a resource scope
 
         subProgram.StartArguments();
-        var paramIdx = 0;
+        
+        CompileArguments(subProgram, call, targetName);
+
+        subProgram.CallFunction(target.Value);
+    }
+
+    private void CompileArguments(IntermediaryRepresentation subProgram, List<SyntaxTree> call, string functionBeingCalled)
+    {
+        // We go through the arguments twice --
+        // Once to get the labelled/named positions,
+        // Then again to output the IR commands
+        var argNameToPos = GetArgumentPositions(functionBeingCalled);
+        
+        int paramIdx;
         var parameters = call.Skip(1).ToList();
+
+        // Separate labelled and unlabelled arguments
+        var labelledArgs = new Dictionary<int, SyntaxTree>();
+        var unlabelledArgs = new Queue<SyntaxTree>();
         foreach (var param in parameters)
         {
+            if (!string.IsNullOrWhiteSpace(param.Label)) // parameter is labelled.
+            {
+                if (!argNameToPos.ContainsKey(param.Label)) throw new Exception($"Label '{param.Label}' at {param.Position()} does not match any function arguments");
+                paramIdx = argNameToPos[param.Label];
+                if (labelledArgs.ContainsKey(paramIdx)) throw new Exception($"Parameter at {param.Position()} duplicates argument {paramIdx} of the function");
+                labelledArgs.Add(paramIdx, param);
+            }
+            else
+            {
+                unlabelledArgs.Enqueue(param);
+            }
+        }
+        
+        // Compile references in order
+        paramIdx = 0;
+        while (paramIdx < parameters.Count)
+        {
+            var param = labelledArgs.ContainsKey(paramIdx)
+                ? labelledArgs[paramIdx]
+                : unlabelledArgs.Dequeue();
+            
             if (param.Type == SyntaxNodeType.List) subProgram.QuoteParameter(param, paramIdx);
             else if (param.Type == SyntaxNodeType.Token)
             {
                 if (!string.IsNullOrWhiteSpace(param.Label)) // parameter is labelled.
                 {
-                    paramIdx = GetParameterIndex(param.Label, target.Value, param);
+                    paramIdx = argNameToPos[param.Label];
                 }
 
                 if (string.IsNullOrWhiteSpace(param.Value)) throw new Exception("Internal error: empty token");
@@ -148,25 +193,25 @@ public class CompilerPass1
 
             paramIdx++;
         }
-
-        subProgram.CallFunction(target.Value);
     }
 
-    private int GetParameterIndex(string argName, string funcName, SyntaxTree declared)
+    private Dictionary<string,int> GetArgumentPositions(string functionName)
     {
-        if (!_functions.ContainsKey(funcName)) throw new Exception($"No such function declared '{funcName}'. At {declared.Position()}");
+        if (_builtInArgs.ContainsKey(functionName)) return _builtInArgs[functionName];
+        var target = _functions[functionName];
         
-        var tree = _functions[funcName];
-        if (tree.ProgramItems.Count() < 3) throw new Exception($"Invalid function definition at {tree.Position()}, no argument list found");
-        
-        var argNode = tree.Items[2];
+        var argNode = target.Items[2];
         if (argNode.Type != SyntaxNodeType.List) throw new Exception($"Invalid function definition at {argNode.Position()}. Expected argument list '(...)', got {argNode.Describe()}");
-        
+
+        var outp= new Dictionary<string,int>();
         var args = argNode.ProgramItems.ToList();
         for (int i = 0; i < args.Count; i++)
         {
-            if (args[i].Value == argName) return i;
+            var name = args[i].Value;
+            if (name is null) throw new Exception($"Invalid function argument definition at {argNode.Position()}");
+            outp.Add(name, i);
         }
-        throw new Exception($"Unknown argument '{argName}' of function '{funcName}' referenced at {declared.Position()}");
+
+        return outp;
     }
 }

@@ -26,6 +26,7 @@ public class CompilerTests
     public void basic_program()
     {
         const string basicProgram = @"
+(def log ())
 (def main (stdin stdout)
     (log stdout `hello, world`)
 )
@@ -39,7 +40,10 @@ public class CompilerTests
         Assert.That(ir.Instructions.Count, Is.Not.Zero);
         
         Console.Write(ir.Describe());
-        Assert.Inconclusive("needs more test");
+        
+        Assert.That(ir.FunctionOffsets.ContainsKey("main"));
+        Assert.That(ir.Instructions.Single(i=>i.Command==IrCmdType.RefArg).Arguments[0], Is.EqualTo("stdout"));
+        Assert.That(ir.Instructions.Single(i=>i.Command==IrCmdType.ValArg).Arguments[0], Is.EqualTo("hello, world"));
     }
     
     [Test]
@@ -85,8 +89,6 @@ public class CompilerTests
     [Test]
     public void positional_arguments()
     {
-        // TODO: define what happens with "(test `one` three:`three` `two`)"?
-        
         const string basicProgram = @"
 (def test (one two three))
 (def main ()
@@ -111,6 +113,39 @@ public class CompilerTests
         Assert.That(callTwo.Arguments[1], Is.EqualTo("1"));
         
         var callOne = ir.Instructions.SingleOrDefault(i=>i.Command == IrCmdType.ValArg && i.Arguments[0]=="eno");
+        Assert.That(callOne.Arguments[1], Is.EqualTo("0"));
+    }
+    
+    [Test]
+    public void partial_positional_arguments()
+    {
+        // Any unlabeled arguments go in order from pos 0 up,
+        // and skip any positions taken by a labeled argument.
+        
+        const string basicProgram = @"
+(def test (one two three))
+(def main ()
+    (test three:`three` `one` `two`)
+)
+";
+
+        var tree = Parser.Parse(basicProgram);
+        var subject = new CompilerPass1(tree);
+        var ir = subject.Compile();
+        
+        Console.Write(ir.Describe());
+        
+        Assert.That(ir, Is.Not.Null);
+        Assert.That(ir.Instructions.Count, Is.Not.Zero);
+        
+        // The call to 'test' should have arguments indexed correctly
+        var callThree = ir.Instructions.SingleOrDefault(i=>i.Command == IrCmdType.ValArg && i.Arguments[0]=="three");
+        Assert.That(callThree.Arguments[1], Is.EqualTo("2"));
+        
+        var callTwo = ir.Instructions.SingleOrDefault(i=>i.Command == IrCmdType.ValArg && i.Arguments[0]=="two");
+        Assert.That(callTwo.Arguments[1], Is.EqualTo("1"));
+        
+        var callOne = ir.Instructions.SingleOrDefault(i=>i.Command == IrCmdType.ValArg && i.Arguments[0]=="one");
         Assert.That(callOne.Arguments[1], Is.EqualTo("0"));
     }
 }
