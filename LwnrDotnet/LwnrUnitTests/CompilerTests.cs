@@ -61,6 +61,10 @@ public class CompilerTests
         // become really gnarly- `c=(a*2)+(b*3)` -> `(int t1)(int t2)(* t1 a 2)(* t2 b 3)(+ c t1 t2)`
         // Maybe a math-quote would work?
         // `(set c [a*2 + b*3])`
+        // IEB: Have a special quotation for an RPN syntax, and pass a stack container into it.
+        // See the 'HopscotchForth' for a base.
+        // so math quote would be like
+        // `(new stack s)(rpn s [a 2 * b 3 * +])(set c s@0)`
         
         const string basicProgram = @"
 (def sort (list comparer start end)
@@ -69,7 +73,7 @@ public class CompilerTests
 (def main (stdin stdout)
     (new list myList 8 5 4 6 9 7 1 3 2)
     (
-        sort myList (\ (a b c) (set c (< a b)) )
+        sort myList (\ (a b c) (< a b c) )
     )
     (log stdout `hello, world`)
 )
