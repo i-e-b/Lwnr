@@ -33,15 +33,27 @@ public enum TokenType
     /// <summary>
     /// '(' character
     /// </summary>
-    OpenParen = 5,
+    OpenList = 5,
     
     /// <summary>
     /// ')' character
     /// </summary>
-    CloseParen = 6,
+    CloseList = 6,
     
     /// <summary>
     /// A comment until end of line
     /// </summary>
-    Comment = 7
+    Comment = 7,
+    
+    /// <summary>
+    /// A list type is a normal quote
+    /// (as can be a function call or
+    /// a macro input)
+    /// </summary>
+    CodeQuote = 8,
+    
+    /// <summary>
+    /// A list type is a stack-based program.
+    /// </summary>
+    StackQuote = 9
 }

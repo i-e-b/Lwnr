@@ -59,12 +59,24 @@ public class SyntaxTree
     /// <summary>
     /// Create a new node that is a child of this one.
     /// </summary>
-    public SyntaxTree AddListNode(int start, string? label)
+    public SyntaxTree AddListNode(int start, string token, string? label)
     {
+        var tokenType = TokenType.Invalid;
+        switch (token)
+        {
+            case "(": 
+                tokenType = TokenType.CodeQuote;
+                break;
+            
+            case "{":
+                tokenType = TokenType.StackQuote;
+                break;
+        }
+
         var child = new SyntaxTree{
             Parent = this,
             Type = SyntaxNodeType.List,
-            TokenType = TokenType.Invalid,
+            TokenType = tokenType,
             Label = label,
             Start = start
         };
@@ -138,6 +150,12 @@ public class SyntaxTree
         sb.AppendLine();
         if (depth > 0) sb.Append(' ', depth * 2);
         sb.Append(node.Type.ToString());
+        if (node.Type == SyntaxNodeType.List)
+        {
+            sb.Append(' ');
+            sb.Append(node.Items.Count.ToString());
+        }
+
         if (node.Value is not null)
         {
             sb.Append($" {node.TokenType.ToString()}: {node.Value}");

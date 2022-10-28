@@ -67,16 +67,20 @@ public class ParserCursor
         switch (_on)
         {
             case '(':
+            case '{':
             {
+                var actual = _on.ToString();
+                type = TokenType.OpenList;
                 Step();
-                type = TokenType.OpenParen;
-                return "(";
+                return actual;
             }
             case ')':
+            case '}':
             {
+                var actual = _on.ToString();
+                type = TokenType.CloseList;
                 Step();
-                type = TokenType.CloseParen;
-                return ")";
+                return actual;
             }
             case '`':
             {
@@ -211,6 +215,8 @@ public class ParserCursor
         {
             '(' => true,
             ')' => true,
+            '{' => true,
+            '}' => true,
             '`' => true,
             '\0' => true,
             

@@ -35,17 +35,17 @@ public static class Parser
                     outp.IsValid = false;
                     break;
                 
-                case TokenType.OpenParen: // go deeper
-                    target = target.AddListNode(start, label);
+                case TokenType.OpenList: // go deeper
+                    target = target.AddListNode(start, token, label);
                     label = null;
                     break;
                 
-                case TokenType.CloseParen when target.Parent is null:// too many close paren
+                case TokenType.CloseList when target.Parent is null:// too many close paren
                     outp.IsValid = false;
                     label = null;
                     return outp;
                 
-                case TokenType.CloseParen: // up
+                case TokenType.CloseList: // up
                     target.End = end;
                     target = target.Parent;
                     if (label is not null) outp.IsValid = false; // labeling nothing?
@@ -113,9 +113,9 @@ public static class Parser
             {
                 case SyntaxNodeType.List:
                     if (item.Label is not null) sb.Append($"{item.Label}: ");
-                    sb.Append('(');
+                    sb.Append(item.TokenType == TokenType.StackQuote ? '{' : '(');
                     RenderRecursive(item, sb);
-                    sb.Append(')');
+                    sb.Append(item.TokenType == TokenType.StackQuote ? '}' : ')');
                     break;
                 
                 case SyntaxNodeType.Token:
@@ -160,8 +160,8 @@ public static class Parser
                 sb.Append(item.Value);
                 break;
             
-            case TokenType.OpenParen:
-            case TokenType.CloseParen:
+            case TokenType.OpenList:
+            case TokenType.CloseList:
             default:
                 throw new Exception($"Unexpected token type '{item.TokenType.ToString()}'");
         }
