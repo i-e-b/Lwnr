@@ -138,8 +138,8 @@ public class SyntaxTests
         // clearer syntax, and changing argument order
         const string namedArgCall = @"
 (if myPredicate
-    then:(result set true)
-    else:(result clear)
+    then: (result set true)
+    else: (result clear)
 )
 ";
         var tree = Parser.Parse(namedArgCall);
@@ -153,7 +153,7 @@ public class SyntaxTests
         
         var ifList = tree.Items[0];
         Assert.That(ifList.Type, Is.EqualTo(SyntaxNodeType.List), "leaf item type");
-        Assert.That(ifList.Items.Count, Is.EqualTo(4), "leaf item count");
+        Assert.That(ifList.Items.Count, Is.EqualTo(4+3), "leaf item count"); // 4 items, 3 new-lines
         
         var ifName = ifList.Items[0];
         Assert.That(ifName.Type, Is.EqualTo(SyntaxNodeType.Token), "target type");
@@ -165,15 +165,19 @@ public class SyntaxTests
         Assert.That(predName.TokenType, Is.EqualTo(TokenType.Atom), "predicate sub-type");
         Assert.That(predName.Value, Is.EqualTo("myPredicate"), "predicate value");
         
-        var thenList = ifList.Items[2];
+        var thenList = ifList.Items[3];
         Assert.That(thenList.Type, Is.EqualTo(SyntaxNodeType.List), "then type");
         Assert.That(thenList.Label, Is.EqualTo("then"), "then label");
         Assert.That(thenList.Items.Count, Is.EqualTo(3), "then value");
         
-        var elseList = ifList.Items[3];
+        var elseList = ifList.Items[5];
         Assert.That(elseList.Type, Is.EqualTo(SyntaxNodeType.List), "else type");
         Assert.That(elseList.Label, Is.EqualTo("else"), "else label");
         Assert.That(elseList.Items.Count, Is.EqualTo(2), "else value");
+        
+        var rendered = Parser.Render(tree);
+        Console.WriteLine(rendered);
+        Assert.That(rendered.Trim(), Is.EqualTo(namedArgCall.Trim()), "rendered output");
     }
 
     [Test]
@@ -182,11 +186,10 @@ public class SyntaxTests
         const string nonTrivial = @"
 (def is-even (value result) // number -> maybe
     (if (= 0 (value % 2))
-        then:(result set true)
-        else:(result clear)
+        then: (result set true)
+        else: (result clear)
     )
 )
-
 (def pick-even (source dest)
     (alias cursor (source items))
     (set item new@maybe)
@@ -206,15 +209,15 @@ public class SyntaxTests
 
         Assert.That(tree.IsValid, Is.True, "IsValid");
         Assert.That(tree.Type, Is.EqualTo(SyntaxNodeType.Root), "root type");
-        Assert.That(tree.Items.Count, Is.EqualTo(2), "root item count");
+        Assert.That(tree.Items.Count, Is.EqualTo(3), "root item count"); // two defs and a new-line
         
         Assert.That(tree.Items[0].Type, Is.EqualTo(SyntaxNodeType.List), "leaf item type");
-        Assert.That(tree.Items[0].Items.Count, Is.EqualTo(5), "leaf item count");
+        Assert.That(tree.Items[0].Items.Count, Is.EqualTo(5+1), "leaf item count"); // 5 items + new-line
         
-        Assert.That(tree.Items[1].Type, Is.EqualTo(SyntaxNodeType.List), "leaf item type");
-        Assert.That(tree.Items[1].Items.Count, Is.EqualTo(6), "leaf item count");
+        Assert.That(tree.Items[2].Type, Is.EqualTo(SyntaxNodeType.List), "leaf item type");
+        Assert.That(tree.Items[2].Items.Count, Is.EqualTo(6+4), "leaf item count"); // 6 items + 4 new-lines
 
-        // TODO: indent in render
+        // check indent in render
         var rendered = Parser.Render(tree);
         Console.WriteLine(rendered);
         Assert.That(rendered.Trim(), Is.EqualTo(nonTrivial.Trim()), "rendered output");
@@ -224,17 +227,18 @@ public class SyntaxTests
     public void stack_quotes_are_parsed()
     {
         const string stackQuote = @"
-(def stackFunction { 
-    // Braces '{}' mark a 'stack quote'.
-    // If the FIRST item after a function def name
-    // is a stack quote, then that IS the function,
-    // and there are no explicit parameters.
-    // this function is accessible either in other
-    // stack quotes, or when 'applying' a function
-    // to a list of data.
+(def stackFunction {
+        // Braces '{}' mark a 'stack quote'.
+        // If the FIRST item after a function def name
+        // is a stack quote, then that IS the function,
+        // and there are no explicit parameters.
+        // this function is accessible either in other
+        // stack quotes, or when 'applying' a function
+        // to a list of data.
 
-    1 swap -   // return (1 - input)
-})
+        1 swap - // return (1 - input)
+    }
+)
 (def mainlyMath (x y out:z)
     (new stack s)
     (apply s {x y /}) // push x, push y, pop2 & push x/y
@@ -243,18 +247,19 @@ public class SyntaxTests
 ";
         
         var tree = Parser.Parse(stackQuote);
+        Console.WriteLine(string.Join(", ", tree.Reasons));
 
         Console.WriteLine(tree.Describe());
 
         Assert.That(tree.IsValid, Is.True, "IsValid");
         Assert.That(tree.Type, Is.EqualTo(SyntaxNodeType.Root), "root type");
-        Assert.That(tree.Items.Count, Is.EqualTo(2), "root item count");
+        Assert.That(tree.Items.Count, Is.EqualTo(2+1), "root item count"); // 2 lists, 1 new-line
         
         Assert.That(tree.Items[0].Type, Is.EqualTo(SyntaxNodeType.List), "leaf item type");
-        Assert.That(tree.Items[0].Items.Count, Is.EqualTo(3), "leaf item count");
+        Assert.That(tree.Items[0].Items.Count, Is.EqualTo(3+1), "leaf item count"); // 3 things, 1 new-line
         
-        Assert.That(tree.Items[1].Type, Is.EqualTo(SyntaxNodeType.List), "leaf item type");
-        Assert.That(tree.Items[1].Items.Count, Is.EqualTo(8), "leaf item count");
+        Assert.That(tree.Items[2].Type, Is.EqualTo(SyntaxNodeType.List), "leaf item type");
+        Assert.That(tree.Items[2].Items.Count, Is.EqualTo(6+2+2), "leaf item count"); // 5 lists, 2 comments, 2 new-lines
         
         var rendered = Parser.Render(tree);
         Console.WriteLine(rendered);

@@ -115,7 +115,12 @@ public class SyntaxTree
     /// <summary>
     /// <see cref="Items"/> with meta-information (comments etc.) filtered out.
     /// </summary>
-    public IEnumerable<SyntaxTree> ProgramItems =>  Items.Where(i=>i.Type != SyntaxNodeType.Meta); 
+    public IEnumerable<SyntaxTree> ProgramItems =>  Items.Where(i=>i.Type != SyntaxNodeType.Meta);
+
+    /// <summary>
+    /// Parser/Compiler error messages
+    /// </summary>
+    public List<string> Reasons { get; } = new();
 
     /// <summary>
     /// Add a new leaf node with a token value and type,

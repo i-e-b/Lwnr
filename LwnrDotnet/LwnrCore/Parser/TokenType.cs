@@ -55,5 +55,10 @@ public enum TokenType
     /// <summary>
     /// A list type is a stack-based program.
     /// </summary>
-    StackQuote = 9
+    StackQuote = 9,
+    
+    /// <summary>
+    /// Line break in source code (no program meaning)
+    /// </summary>
+    LineBreak = 10
 }

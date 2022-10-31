@@ -46,10 +46,21 @@ public class ParserCursor
     /// <summary>
     /// Returns true if the current char is any form of whitespace
     /// </summary>
-    public bool OnWhiteSpace()
+    private bool OnWhiteSpace(ref bool hasNewline)
     {
-        if (_on == '\0') return false;
-        return char.IsWhiteSpace(_on);
+        switch (_on)
+        {
+            case '\0':
+                return false;
+            
+            case '\r':
+            case '\n':
+                hasNewline = true;
+                return true;
+
+            default:
+                return char.IsWhiteSpace(_on);
+        }
     }
 
     /// <summary>
@@ -61,8 +72,15 @@ public class ParserCursor
         type = TokenType.Invalid;
         
         // skip whitespace
-        while (OnWhiteSpace()) { Step(); }
-        
+        var hasNewline = false;
+        while (OnWhiteSpace(ref hasNewline)) { Step(); }
+
+        if (hasNewline)
+        {
+            type = TokenType.LineBreak;
+            return "";
+        }
+
         // handle single-char cases
         switch (_on)
         {
