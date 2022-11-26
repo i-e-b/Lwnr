@@ -48,4 +48,27 @@ public class HopscotchTests
         Assert.That(result.Pop(), Is.EqualTo(5.0));
     }
 
+    [Test]
+    [TestCase("10.1 if (z >(x *(y))) then (1.01) endif ", 1.01)]
+    [TestCase("10.1 if (x >(z *(y))) then (1.01) endif ", 10.1)]
+    [TestCase("if (x < (y)) then (5) else (6)", 5)]
+    [TestCase("if (x <= (y)) then (5) else (6)", 5)]
+    [TestCase("if (x >= (y)) then (5) else (6)", 6)]
+    [TestCase("x y >= y if 5 then 6 else", 6)]
+    public void program_examples(string programStr, double expected)
+    {
+        var program = Lang.ParseAndReorder(programStr);
+        
+        Console.WriteLine(string.Join("; ", program));
+        
+        var vars = new Dictionary<string, double> {
+            { "x",  1.0 },
+            { "y",  5.0 },
+            { "z", 12.3 }
+        };
+        
+        var result = Lang.Run(program, vars);
+        Assert.That(result.Pop(), Is.EqualTo(expected));
+    }
+
 }

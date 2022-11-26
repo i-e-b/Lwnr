@@ -47,50 +47,6 @@ public class CompilerTests
     }
     
     [Test]
-    public void quotation_arguments()
-    {
-        // As we can't return from a function,
-        // there is no reason to evaluate a function to
-        // get an argument value. Instead, we treat them
-        // as quotations, which can either be edited with
-        // macros (at compile time) or run as lambdas.
-        
-        // IEB Note: We need *something* to get values out of expressions
-        // Like `(set c (< a b))` below.
-        // `(< c a b)` would be fine, but then all kinds of math
-        // become really gnarly- `c=(a*2)+(b*3)` -> `(int t1)(int t2)(* t1 a 2)(* t2 b 3)(+ c t1 t2)`
-        // Maybe a math-quote would work?
-        // `(set c [a*2 + b*3])`
-        // IEB: Have a special quotation for an RPN syntax, and pass a stack container into it.
-        // See the 'HopscotchForth' for a base.
-        // so math quote would be like
-        // `(new stack s)(rpn s [a 2 * b 3 * +])(set c s@0)`
-        
-        const string basicProgram = @"
-(def sort (list comparer start end)
-    // do a sort...
-)
-(def main (stdin stdout)
-    (new list myList 8 5 4 6 9 7 1 3 2)
-    (
-        sort myList (\ (a b c) (< a b c) )
-    )
-    (log stdout `hello, world`)
-)
-";
-
-        var tree = Parser.Parse(basicProgram);
-        var subject = new CompilerPass1(tree);
-        var ir = subject.Compile();
-        
-        Assert.That(ir, Is.Not.Null);
-        Assert.That(ir.Instructions.Count, Is.Not.Zero);
-        
-        Console.Write(ir.Describe());
-        Assert.Inconclusive("needs more test");
-    }
-    
-    [Test]
     public void positional_arguments()
     {
         const string basicProgram = @"
@@ -151,5 +107,78 @@ public class CompilerTests
         
         var callOne = ir.Instructions.SingleOrDefault(i=>i.Command == IrCmdType.ValArg && i.Arguments[0]=="one");
         Assert.That(callOne.Arguments[1], Is.EqualTo("0"));
+    }
+    
+    [Test]
+    public void quotation_arguments()
+    {
+        // As we can't return from a function,
+        // there is no reason to evaluate a function to
+        // get an argument value. Instead, we treat them
+        // as quotations, which can either be edited with
+        // macros (at compile time) or run as lambdas.
+        
+        // Have a special quotation for an RPN syntax, and pass a stack container into it.
+        // See the 'HopscotchForth' for a base.
+        // so math quote would be like
+        // `(new stack s)(rpn s [a 2 * b 3 * +])(set c s@0)`
+        // IEB: Would also be good to have a big macro to do this: https://github.com/glathoud/flatorize
+        
+        const string basicProgram = @"
+(def sort (list comparer start end)
+    // do a sort...
+)
+(def main (stdin stdout)
+    (new list myList 8 5 4 6 9 7 1 3 2)
+    (
+        sort myList (\ (a b c) (< a b c) )
+    )
+    (log stdout `hello, world`)
+)
+";
+
+        var tree = Parser.Parse(basicProgram);
+        var subject = new CompilerPass1(tree);
+        var ir = subject.Compile();
+        
+        Assert.That(ir, Is.Not.Null);
+        Assert.That(ir.Instructions.Count, Is.Not.Zero);
+        
+        Console.Write(ir.Describe());
+        
+        // -------------------
+        // The 'sort' function
+        // -------------------
+        var sortOffset = ir.FunctionOffsets["sort"];
+        Assert.That(sortOffset, Is.GreaterThanOrEqualTo(0));
+        
+        // No 'new' in this function, so we should go straight to args
+        Assert.That(ir.Instructions[sortOffset+0].Command, Is.EqualTo(IrCmdType.AliasParam));
+        Assert.That(ir.Instructions[sortOffset+0].Arguments[0], Is.EqualTo("list"));
+        
+        Assert.That(ir.Instructions[sortOffset+1].Command, Is.EqualTo(IrCmdType.AliasParam));
+        Assert.That(ir.Instructions[sortOffset+1].Arguments[0], Is.EqualTo("comparer"));
+        
+        Assert.That(ir.Instructions[sortOffset+2].Command, Is.EqualTo(IrCmdType.AliasParam));
+        Assert.That(ir.Instructions[sortOffset+2].Arguments[0], Is.EqualTo("start"));
+        
+        Assert.That(ir.Instructions[sortOffset+3].Command, Is.EqualTo(IrCmdType.AliasParam));
+        Assert.That(ir.Instructions[sortOffset+3].Arguments[0], Is.EqualTo("end"));
+        
+        // No body, so 'end'
+        Assert.That(ir.Instructions[sortOffset+4].Command, Is.EqualTo(IrCmdType.EndOfFunction));
+        Assert.That(ir.Instructions[sortOffset+4].Arguments, Is.Empty);
+        
+        
+        // -------------------
+        // The 'main' function
+        // -------------------
+        var mainOffset = ir.FunctionOffsets["main"];
+        Assert.That(mainOffset, Is.GreaterThanOrEqualTo(0));
+        
+        // We have at least one 'new', so this function must push a scope
+        Assert.That(ir.Instructions[mainOffset+0].Command, Is.EqualTo(IrCmdType.PushScope));
+        
+        Assert.Inconclusive("needs more test\r\n");
     }
 }
