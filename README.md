@@ -147,3 +147,27 @@ The runtime is a simple interpreter of the AST for the same reasons.
 ### How I am supposed to pronounce "Lwnr"?
 
 _Rwy'n byw yng Nghymru_, so I would say it like "Lunar", but you do you.
+
+## Thought dump
+
+Syntax: implicit container creation. Create a default container for the argument.
+
+other languages
+```
+var x = listA.concat(listB);
+int c = a + b;
+```
+
+without sugar:
+```
+(new list x)
+(new int c)
+(concat x listA listB)
+(+ c a b)
+```
+
+with sugar:
+```
+(concat @x listA listB)
+(+ @c a b)
+```
