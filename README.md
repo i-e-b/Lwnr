@@ -171,3 +171,8 @@ with sugar:
 (concat @x listA listB)
 (+ @c a b)
 ```
+
+
+## Link dump
+
+https://buttondown.email/hillelwayne/archive/microfeatures-id-like-to-see-in-more-languages/
