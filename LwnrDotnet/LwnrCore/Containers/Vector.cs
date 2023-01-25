@@ -23,31 +23,31 @@ public class Vector<T>
      * other.  We also guarantee that all array cells not holding
      * deque elements are always null.
      */
-    private T[] elements;
+    private T[] _elements;
 
     /**
      * The index of the element at the head of the deque (which is the
      * element that would be removed by remove() or pop()); or an
      * arbitrary number equal to tail if the deque is empty.
      */
-    private volatile int head;
+    private volatile int _head;
 
     /**
      * The index at which the next element would be added to the tail
      * of the deque (via addLast(E), add(E), or push(E)).
      */
-    private volatile  int tail;
+    private volatile  int _tail;
 
     /**
      * The minimum capacity that we'll use for a newly created deque.
      * Must be a power of 2.
      */
-    private const uint MIN_INITIAL_CAPACITY = 8;
+    private const uint MinInitialCapacity = 8;
     
     /// <summary>
     /// Maximum capacity for a queue. Must be a power of 2.
     /// </summary>
-    private const int MAX_CAPACITY = 0x4000_0000;
+    private const int MaxCapacity = 0x4000_0000;
 
     // ******  Array allocation and resizing utilities ******
 
@@ -56,11 +56,11 @@ public class Vector<T>
      *
      * @param numElements the number of elements to hold
      */
-    private void allocateElements(int numElements) {
+    private void AllocateElements(int numElements) {
         if (numElements <= 0) throw new Exception("Invalid element count");
-        if (numElements > MAX_CAPACITY) throw new Exception("Invalid element count");
+        if (numElements > MaxCapacity) throw new Exception("Invalid element count");
         
-        uint initialCapacity = MIN_INITIAL_CAPACITY;
+        var initialCapacity = MinInitialCapacity;
        
         // Find the best power of two to hold elements.
         // Tests "<=" because arrays aren't kept full.
@@ -73,34 +73,34 @@ public class Vector<T>
             initialCapacity |= (initialCapacity >> 16);
             initialCapacity++;
         }
-        elements = new T[initialCapacity];
+        _elements = new T[initialCapacity];
     }
 
     /**
      * Doubles the capacity of this deque.  Call only when full, i.e.,
      * when head and tail have wrapped around to become equal.
      */
-    private void doubleCapacity() {
-        if (head != tail) throw new Exception("Unexpected state (internal)");
-        int p = head;
-        int elementsLength = elements.Length;
-        int r = elementsLength - p; // number of elements to the right of p
-        int newCapacity = elementsLength << 1;
+    private void DoubleCapacity() {
+        if (_head != _tail) throw new Exception("Unexpected state (internal)");
+        var p = _head;
+        var elementsLength = _elements.Length;
+        var r = elementsLength - p; // number of elements to the right of p
+        var newCapacity = elementsLength << 1;
         if (newCapacity < 0)
             throw new Exception("Vector capacity exceeded");
         
         // Create new array, and copy elements over
-        T[] newArray = new T[newCapacity];
+        var newArray = new T[newCapacity];
         
-        Array.Copy(elements, p, newArray, 0, r);
-        Array.Copy(elements, 0, newArray, r, p);
+        Array.Copy(_elements, p, newArray, 0, r);
+        Array.Copy(_elements, 0, newArray, r, p);
         
         // null out old array (helps with GC)
-        Array.Fill(elements, default);
+        Array.Fill(_elements, default);
         
-        elements = newArray;
-        head = 0;
-        tail = elementsLength;
+        _elements = newArray;
+        _head = 0;
+        _tail = elementsLength;
     }
 
     /// <summary>
@@ -108,7 +108,7 @@ public class Vector<T>
     /// </summary>
     public static Vector<TV> FromValue<TV>(TV v){
         var result = new Vector<TV>();
-        result.addLast(v);
+        result.AddLast(v);
         return result;
     }
 
@@ -116,7 +116,7 @@ public class Vector<T>
      * Constructs an empty array deque
      */
     public Vector() {
-        elements = new T[8];
+        _elements = new T[8];
     }
 
     /**
@@ -126,8 +126,8 @@ public class Vector<T>
      * @param numElements lower bound on initial capacity of the deque
      */
     public Vector(int numElements) {
-        elements = Array.Empty<T>();
-        allocateElements(numElements);
+        _elements = Array.Empty<T>();
+        AllocateElements(numElements);
     }
 
     /**
@@ -141,19 +141,19 @@ public class Vector<T>
      * @throws NullPointerException if the specified collection is null
      */
     public Vector(T[] c) {
-        elements = Array.Empty<T>();
-        allocateElements(c.Length);
-        foreach (var v in c) addLast(v);
+        _elements = Array.Empty<T>();
+        AllocateElements(c.Length);
+        foreach (var v in c) AddLast(v);
     }
 
     /**
      * Create a copy of 'other'. No data is shared.
      */
     public Vector(Vector<T> other){
-        elements = new T[other.elements.Length];
-        this.head = other.head;
-        this.tail = other.tail;
-        Array.Copy(other.elements, 0, this.elements, 0, elements.Length);
+        _elements = new T[other._elements.Length];
+        this._head = other._head;
+        this._tail = other._tail;
+        Array.Copy(other._elements, 0, this._elements, 0, _elements.Length);
     }
 
     // The main insertion and extraction methods are addFirst,
@@ -166,53 +166,53 @@ public class Vector<T>
      * @param e the element to add
      * @throws NullPointerException if the specified element is null
      */
-    public void addFirst(T e) {
-        elements[head = (head - 1) & (elements.Length - 1)] = e;
-        if (head == tail) doubleCapacity();
+    public void AddFirst(T e) {
+        _elements[_head = (_head - 1) & (_elements.Length - 1)] = e;
+        if (_head == _tail) DoubleCapacity();
     }
 
     /**
      * Inserts the specified element at the end of this deque.
      */
-    public void addLast(T e) {
-        elements[tail] = e;
-        if ( (tail = (tail + 1) & (elements.Length - 1)) == head)
-            doubleCapacity();
+    public void AddLast(T e) {
+        _elements[_tail] = e;
+        if ( (_tail = (_tail + 1) & (_elements.Length - 1)) == _head)
+            DoubleCapacity();
     }
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public T removeFirst() {
-        if (head == tail) throw new Exception("The vector is empty");
-        return pollFirst();
+    public T RemoveFirst() {
+        if (_head == _tail) throw new Exception("The vector is empty");
+        return PollFirst();
     }
 
     /**
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public T removeLast() {
-        if (head == tail) throw new Exception("The vector is empty");
-        return pollLast();
+    public T RemoveLast() {
+        if (_head == _tail) throw new Exception("The vector is empty");
+        return PollLast();
     }
 
-    private T pollFirst() {
-        int h = head;
-        T result = elements[h];
+    private T PollFirst() {
+        var h = _head;
+        var result = _elements[h];
         // Element is null if deque empty
         if (result != null) {
-            elements[h] = default!;
-            head = (h + 1) & (elements.Length - 1);
+            _elements[h] = default!;
+            _head = (h + 1) & (_elements.Length - 1);
         }
         return result;
     }
 
-    private T pollLast() {
-        int t = (tail - 1) & (elements.Length - 1);
-        T result = elements[t];
+    private T PollLast() {
+        var t = (_tail - 1) & (_elements.Length - 1);
+        var result = _elements[t];
         if (result != null) {
-            elements[t] = default!;
-            tail = t;
+            _elements[t] = default!;
+            _tail = t;
         }
         return result;
     }
@@ -221,18 +221,18 @@ public class Vector<T>
      * Read but don't remove first item
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public T getFirst() {
-        if (head == tail) throw new Exception("The vector is empty");
-        return elements[head];
+    public T GetFirst() {
+        if (_head == _tail) throw new Exception("The vector is empty");
+        return _elements[_head];
     }
 
     /**
      * Read but don't remove last item
      * @throws NoSuchElementException {@inheritDoc}
      */
-    public T getLast() {
-        if (head == tail) throw new Exception("The vector is empty");
-        return elements[(tail - 1) & (elements.Length - 1)];
+    public T GetLast() {
+        if (_head == _tail) throw new Exception("The vector is empty");
+        return _elements[(_tail - 1) & (_elements.Length - 1)];
     }
 
 
@@ -241,12 +241,12 @@ public class Vector<T>
      * adjusting head and tail as necessary.  This can result in motion of
      * elements backwards or forwards in the array.
      */
-    public void delete(int i) {
-        int mask = elements.Length - 1;
-        int h = head;
-        int t = tail;
-        int front = (i - h) & mask;
-        int back = (t - i) & mask;
+    public void Delete(int i) {
+        var mask = _elements.Length - 1;
+        var h = _head;
+        var t = _tail;
+        var front = (i - h) & mask;
+        var back = (t - i) & mask;
 
         // Invariant: head <= i < tail mod circularity
         if (front >= ((t - h) & mask))
@@ -255,23 +255,23 @@ public class Vector<T>
         // Optimize for least element motion
         if (front < back) {
             if (h <= i) {
-                Array.Copy(elements, h, elements, h + 1, front);
+                Array.Copy(_elements, h, _elements, h + 1, front);
             } else { // Wrap around
-                Array.Copy(elements, 0, elements, 1, i);
-                elements[0] = elements[mask];
-                Array.Copy(elements, h, elements, h + 1, mask - h);
+                Array.Copy(_elements, 0, _elements, 1, i);
+                _elements[0] = _elements[mask];
+                Array.Copy(_elements, h, _elements, h + 1, mask - h);
             }
-            elements[h] = default!;
-            head = (h + 1) & mask;
+            _elements[h] = default!;
+            _head = (h + 1) & mask;
         } else {
             if (i < t) { // Copy the null tail as well
-                Array.Copy(elements, i + 1, elements, i, back);
-                tail = t - 1;
+                Array.Copy(_elements, i + 1, _elements, i, back);
+                _tail = t - 1;
             } else { // Wrap around
-                Array.Copy(elements, i + 1, elements, i, mask - i);
-                elements[mask] = elements[0];
-                Array.Copy(elements, 1, elements, 0, t);
-                tail = (t - 1) & mask;
+                Array.Copy(_elements, i + 1, _elements, i, mask - i);
+                _elements[mask] = _elements[0];
+                Array.Copy(_elements, 1, _elements, 0, t);
+                _tail = (t - 1) & mask;
             }
         }
     }
@@ -279,43 +279,34 @@ public class Vector<T>
     // *** Collection Methods ***
 
     /**
-     * Returns the number of elements in this deque.
-     *
-     * @return the number of elements in this deque
-     */
-    public int size() {
-        return (tail - head) & (elements.Length - 1);
-    }
-
-    /**
      * Returns {@code true} if this deque contains no elements.
      *
      * @return {@code true} if this deque contains no elements
      */
-    public bool isEmpty() {
-        return head == tail;
+    public bool IsEmpty() {
+        return _head == _tail;
     }
 
     /**
      * Returns {@code false} if this deque contains no elements.
      */
-    public bool notEmpty() {
-        return head != tail;
+    public bool NotEmpty() {
+        return _head != _tail;
     }
 
     /**
      * Removes all of the elements from this deque.
      * The deque will be empty after this call returns.
      */
-    public void clear() {
-        int h = head;
-        int t = tail;
+    public void Clear() {
+        var h = _head;
+        var t = _tail;
         if (h != t) { // clear all cells
-            head = tail = 0;
-            int i = h;
-            int mask = elements.Length - 1;
+            _head = _tail = 0;
+            var i = h;
+            var mask = _elements.Length - 1;
             do {
-                elements[i] = default!;
+                _elements[i] = default!;
                 i = (i + 1) & mask;
             } while (i != t);
         }
@@ -334,18 +325,17 @@ public class Vector<T>
      *
      * @return an array containing all of the elements in this deque
      */
-    public T[] toArray() {
-        bool wrap = (tail < head);
-        int end = wrap ? tail + elements.Length : tail;
-        int newLength = end - head;
-        if (newLength < 0) throw new Exception(head + " > " + end);
+    public T[] ToArray() {
+        var wrap = _tail < _head;
+        var end = wrap ? _tail + _elements.Length : _tail;
+        var newLength = end - _head;
+        if (newLength < 0) throw new Exception(_head + " > " + end);
         
-        T[] copy = new T[newLength];
-        Array.Copy(elements, head, copy, 0, Math.Min(elements.Length - head, newLength));
-        var result = copy;
-        if (wrap) Array.Copy(elements, 0, result, elements.Length - head, tail);
+        var copy = new T[newLength];
+        Array.Copy(_elements, _head, copy, 0, Math.Min(_elements.Length - _head, newLength));
+        if (wrap) Array.Copy(_elements, 0, copy, _elements.Length - _head, _tail);
         
-        return result;
+        return copy;
     }
 
     // *** Array-like Methods ***
@@ -353,43 +343,43 @@ public class Vector<T>
     /**
      * Returns the number of elements in this deque.
      */
-    public int length() {
-        return (tail - head) & (elements.Length - 1);
+    public int Length() {
+        return (_tail - _head) & (_elements.Length - 1);
     }
 
     /** set the value at the given index */
-    public void set(int index, T value) {
-        if (index >= length()) return;
+    public void Set(int index, T value) {
+        if (index >= Length()) return;
         if (index < 0) return;
 
-        if (head < tail) {
-            elements[index + head] = value;
+        if (_head < _tail) {
+            _elements[index + _head] = value;
             return;
         }
 
-        int rIdx = (elements.Length - 1) - head; // 'real' index at end of array
-        if (index <= rIdx) elements[index + head] = value; // it's on the 'right' side of array
-        else elements[index - (rIdx + 1)] = value;// index is wrapped
+        var rIdx = (_elements.Length - 1) - _head; // 'real' index at end of array
+        if (index <= rIdx) _elements[index + _head] = value; // it's on the 'right' side of array
+        else _elements[index - (rIdx + 1)] = value;// index is wrapped
     }
 
     /** update value at index to equal v(value) */
-    public void edit(int index, Func<T,T> v) {
-        if (index >= length()) return;
+    public void Edit(int index, Func<T,T> v) {
+        if (index >= Length()) return;
         if (index < 0) return;
 
-        if (head < tail) {
-            elements[index + head] = v(elements[index + head]);
+        if (_head < _tail) {
+            _elements[index + _head] = v(_elements[index + _head]);
             return;
         }
 
-        int rIdx = (elements.Length - 1) - head; // 'real' index at end of array
-        if (index <= rIdx) elements[index + head] = v(elements[index + head]); // it's on the 'right' side of array
-        else elements[index - (rIdx + 1)] = v(elements[index - (rIdx + 1)]);// index is wrapped
+        var rIdx = (_elements.Length - 1) - _head; // 'real' index at end of array
+        if (index <= rIdx) _elements[index + _head] = v(_elements[index + _head]); // it's on the 'right' side of array
+        else _elements[index - (rIdx + 1)] = v(_elements[index - (rIdx + 1)]);// index is wrapped
     }
 
     /** return the value at the given index. Throws exception if out of range */
-    public T get(int index) {
-        if (index >= length()) throw new Exception("Index out of range");
+    public T Get(int index) {
+        if (index >= Length()) throw new Exception("Index out of range");
         if (index < 0) throw new Exception("Index is invalid");
 
         // Just addFirst looks like ; addFirst(0),addFirst(1),addFirst(2)
@@ -400,62 +390,62 @@ public class Vector<T>
         // conceptually, this is the array [2,1,0]
         // [<tail> 0, 1, 2 _, ... _, <head>_]
 
-        if (head < tail) return elements[index + head];
+        if (_head < _tail) return _elements[index + _head];
 
-        int rIdx = (elements.Length - 1) - head; // 'real' index at end of array
-        if (index <= rIdx) return elements[index + head]; // it's on the 'right' side of array
-        return elements[index - (rIdx + 1)];// index is wrapped
+        var rIdx = (_elements.Length - 1) - _head; // 'real' index at end of array
+        if (index <= rIdx) return _elements[index + _head]; // it's on the 'right' side of array
+        return _elements[index - (rIdx + 1)];// index is wrapped
     }
 
     /** return the value at the given index. Returns defaultValue if out of range */
-    public T get(int index, T defaultValue) {
-        if (index >= length()) return defaultValue;
+    public T Get(int index, T defaultValue) {
+        if (index >= Length()) return defaultValue;
         if (index < 0) return defaultValue;
 
-        if (head < tail) return elements[index + head];
+        if (_head < _tail) return _elements[index + _head];
 
-        int rIdx = (elements.Length - 1) - head; // 'real' index at end of array
-        if (index <= rIdx) return elements[index + head]; // it's on the 'right' side of array
-        return elements[index - (rIdx + 1)];// index is wrapped
+        var rIdx = (_elements.Length - 1) - _head; // 'real' index at end of array
+        if (index <= rIdx) return _elements[index + _head]; // it's on the 'right' side of array
+        return _elements[index - (rIdx + 1)];// index is wrapped
     }
 
 
     /** returns true if the index is valid in the vector */
-    public bool hasIndex(int idx) {
-        return idx >= 0 && idx < length();
+    public bool HasIndex(int idx) {
+        return idx >= 0 && idx < Length();
     }
 
     /** remove items from end until length is less than or equal to newLength*/
-    public void truncateTo(int newLength) {
+    public void TruncateTo(int newLength) {
         if (newLength <=0) {
-            clear();
+            Clear();
             return;
         }
-        while (length() > newLength){
-            this.pollLast();
+        while (Length() > newLength){
+            this.PollLast();
         }
     }
 
     /** remove items from start while they match a comparator function */
-    public void trimLeading(Func<T, bool> comparator){
-        while (length() > 0){
-            if (!comparator(getFirst())) return;
-            removeFirst();
+    public void TrimLeading(Func<T, bool> comparator){
+        while (Length() > 0){
+            if (!comparator(GetFirst())) return;
+            RemoveFirst();
         }
     }
 
     /** reverse the order of items in this vector, without moving head or tail pointers */
-    public void reverse() {
-        if (length() < 2) return;
+    public void Reverse() {
+        if (Length() < 2) return;
 
-        int h = head;
-        int t = tail;
-        int m = elements.Length - 1;
-        int c = length() / 2;
+        var h = _head;
+        var t = _tail;
+        var m = _elements.Length - 1;
+        var c = Length() / 2;
 
         t = (t - 1) & m;
-        for (int i = 0; i < c; i++) {
-            (elements[h], elements[t]) = (elements[t], elements[h]);
+        for (var i = 0; i < c; i++) {
+            (_elements[h], _elements[t]) = (_elements[t], _elements[h]);
             h = (h + 1) & m;
             t = (t - 1) & m;
         }
@@ -467,14 +457,14 @@ public class Vector<T>
      * @param start inclusive start index
      * @param end exclusive end index
      */
-    public Vector<T> slice(int start, int end) {
-        if (start < 0) start += length();
-        if (end < 0) end += length();
+    public Vector<T> Slice(int start, int end) {
+        if (start < 0) start += Length();
+        if (end < 0) end += Length();
         if (start < 0 || start >= end) return new Vector<T>();
 
-        Vector<T> result = new Vector<T>(end - start);
-        for (int i = start; i < end; i++){
-            result.addLast(get(i));
+        var result = new Vector<T>(end - start);
+        for (var i = start; i < end; i++){
+            result.AddLast(Get(i));
         }
         return result;
     }
