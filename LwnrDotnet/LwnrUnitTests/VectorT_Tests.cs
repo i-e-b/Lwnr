@@ -13,7 +13,7 @@ public class VectorT_Tests
     
     [Test]
     public void can_create_empty_vec() {
-        Vector<double> v = new Vector<double>();
+        var v = new Vector<double>();
 
         Assert.That(v.Length(), Is.EqualTo(0), "initial size");
         Assert.That(v.IsEmpty(), Is.True, "empty flag");
@@ -21,7 +21,7 @@ public class VectorT_Tests
     
     [Test]
     public void can_create_vec_with_single_value() {
-        Vector<double> v = Vector<double>.FromValue(4.2);
+        var v = Vector<double>.FromValue(4.2);
 
         Assert.That(v.Length(), Is.EqualTo(1), "initial size");
         Assert.That(v.IsEmpty(), Is.False, "empty flag");
@@ -30,7 +30,7 @@ public class VectorT_Tests
 
     [Test]
     public void can_create_vec_by_adding_to_start() {
-        Vector<double> v = new Vector<double>();
+        var v = new Vector<double>();
         v.AddFirst(1.0);
         v.AddFirst(2.0);
         v.AddFirst(3.0);
@@ -47,7 +47,7 @@ public class VectorT_Tests
 
     [Test]
     public void can_create_vec_by_adding_to_end() {
-        Vector<double> v = new Vector<double>();
+        var v = new Vector<double>();
         v.AddLast(1.0);
         v.AddLast(2.0);
         v.AddLast(3.0);
@@ -64,7 +64,7 @@ public class VectorT_Tests
 
     [Test]
     public void can_create_vec_by_adding_to_both_sides() {
-        Vector<double> v = new Vector<double>();
+        var v = new Vector<double>();
         v.AddLast(1.0);
         v.AddLast(2.0);
         v.AddFirst(3.0);
@@ -84,7 +84,7 @@ public class VectorT_Tests
 
     [Test]
     public void can_peek_at_vector_ends_without_removing_items() {
-        Vector<double> v = new Vector<double>();
+        var v = new Vector<double>();
         v.AddLast(1.0);
         v.AddLast(2.0);
         v.AddFirst(3.0);
@@ -106,11 +106,38 @@ public class VectorT_Tests
         Assert.That(v.Get(2), Is.EqualTo(1.0).Within(epsilon), "idx 2");
         Assert.That(v.Get(3), Is.EqualTo(2.0).Within(epsilon), "idx 3");
     }
+    
+    [Test]
+    public void can_use_array_accessor_on_vector() {
+        var v = new Vector<double>();
+        v.AddLast(1.0);
+        v.AddLast(2.0);
+        v.AddFirst(3.0);
+        v.AddFirst(4.0);
+
+        // get by index
+        Assert.That(v[0], Is.EqualTo(4.0).Within(epsilon), "idx 0");
+        Assert.That(v[1], Is.EqualTo(3.0).Within(epsilon), "idx 1");
+        Assert.That(v[2], Is.EqualTo(1.0).Within(epsilon), "idx 2");
+        Assert.That(v[3], Is.EqualTo(2.0).Within(epsilon), "idx 3");
+        
+        // set by index
+        v[0] = 29.98;
+        v[1] = 33.51;
+        v[2] = 31.35;
+        v[3] = 55.66;
+        
+        // get by index
+        Assert.That(v[0], Is.EqualTo(29.98).Within(epsilon), "idx 0");
+        Assert.That(v[1], Is.EqualTo(33.51).Within(epsilon), "idx 1");
+        Assert.That(v[2], Is.EqualTo(31.35).Within(epsilon), "idx 2");
+        Assert.That(v[3], Is.EqualTo(55.66).Within(epsilon), "idx 3");
+    }
 
     [Test]
     public void can_create_vec_from_array() {
         double[] src = {0.1, 1.2, 2.3, 3.4, 4.5, 5.6};
-        Vector<double> v = new Vector<double>(src);
+        var v = new Vector<double>(src);
 
         Assert.That(v.Length(), Is.EqualTo(6), "size");
         Assert.That(v.IsEmpty(), Is.False, "empty flag");
@@ -123,14 +150,14 @@ public class VectorT_Tests
     [Test]
     public void can_restore_array_from_vec() {
         double[] src = {0.1, 1.2, 2.3, 3.4, 4.5, 5.6};
-        Vector<double> v = new Vector<double>(src);
+        var v = new Vector<double>(src);
 
-        double[] result = v.ToArray();
+        var result = v.ToArray();
 
         Assert.That(v.Length(), Is.EqualTo(6), "vector length");
         Assert.That(result.Length, Is.EqualTo(6), "result length");
 
-        for (int i = 0; i < src.Length; i++) {
+        for (var i = 0; i < src.Length; i++) {
             Assert.That(result[i], Is.EqualTo(src[i]).Within(epsilon), "index "+i);
         }
     }
@@ -138,7 +165,7 @@ public class VectorT_Tests
     [Test]
     public void can_check_if_indexes_are_in_bounds_of_vec() {
         double[] src = {0.1, 1.2, 2.3, 3.4, 4.5, 5.6};
-        Vector<double> v = new Vector<double>(src);
+        var v = new Vector<double>(src);
 
         Assert.False(v.HasIndex(-1), "too low");
         Assert.True(v.HasIndex(0), "first item");
@@ -151,7 +178,7 @@ public class VectorT_Tests
     [Test]
     public void can_read_from_vec_giving_a_default_if_out_of_range() {
         double[] src = {0.1, 1.2, 2.3};
-        Vector<double> v = new Vector<double>(src);
+        var v = new Vector<double>(src);
 
         
         Assert.That(v.Get(-1, 42.0), Is.EqualTo(42.0).Within(epsilon), "too low");
@@ -165,17 +192,17 @@ public class VectorT_Tests
     [Test]
     public void can_restore_array_from_vec_after_removing_items() {
         double[] src = {0.1, 1.2, 2.3, 3.4, 4.5, 5.6};
-        Vector<double> v = new Vector<double>(src);
+        var v = new Vector<double>(src);
 
         Assert.That(v.RemoveFirst(), Is.EqualTo(0.1).Within(epsilon), "removed first");
         Assert.That(v.RemoveLast(), Is.EqualTo(5.6).Within(epsilon), "removed last");
 
-        double[] result = v.ToArray();
+        var result = v.ToArray();
 
         Assert.That(v.Length(), Is.EqualTo(4), "vector length");
         Assert.That(result.Length, Is.EqualTo(4), "result length");
 
-        for (int i = 0; i < result.Length; i++) {
+        for (var i = 0; i < result.Length; i++) {
             Assert.That(result[i], Is.EqualTo(src[i+1]).Within(epsilon), "index "+i);
         }
     }
@@ -183,18 +210,18 @@ public class VectorT_Tests
     [Test]
     public void can_restore_array_from_vec_after_adding_items() {
         double[] src = {0.1, 1.2, 2.3, 3.4, 4.5, 5.6};
-        Vector<double> v = new Vector<double>(src);
+        var v = new Vector<double>(src);
 
         v.AddFirst(-1);
         v.AddLast(-2);
 
         double[] expected = {-1.0, 0.1, 1.2, 2.3, 3.4, 4.5, 5.6, -2.0};
-        double[] result = v.ToArray();
+        var result = v.ToArray();
 
         Assert.That(v.Length(), Is.EqualTo(8), "vector length");
         Assert.That(result.Length, Is.EqualTo(8), "result length");
 
-        for (int i = 0; i < expected.Length; i++) {
+        for (var i = 0; i < expected.Length; i++) {
             Assert.That(result[i], Is.EqualTo(expected[i]).Within(epsilon), "index "+i);
         }
     }
@@ -202,18 +229,18 @@ public class VectorT_Tests
     [Test]
     public void can_remove_vector_items_by_index() {
         double[] src = {0.1, 1.2, 2.3, 3.4, 4.5, 5.6};
-        Vector<double> v = new Vector<double>(src);
+        var v = new Vector<double>(src);
 
         v.Delete(1);
         v.Delete(4); // index 5 in src
 
         double[] expected = {0.1, 2.3, 3.4, 5.6};
-        double[] result = v.ToArray();
+        var result = v.ToArray();
 
         Assert.That(v.Length(), Is.EqualTo(4), "vector length");
         Assert.That(result.Length, Is.EqualTo(4), "result length");
 
-        for (int i = 0; i < expected.Length; i++) {
+        for (var i = 0; i < expected.Length; i++) {
             Assert.That(result[i], Is.EqualTo(expected[i]).Within(epsilon), "index "+i);
         }
     }
@@ -221,14 +248,14 @@ public class VectorT_Tests
     [Test]
     public void can_clear_all_items_from_vector() {
         double[] src = {0.1, 1.2, 2.3, 3.4, 4.5, 5.6};
-        Vector<double> v = new Vector<double>(src);
+        var v = new Vector<double>(src);
 
         Assert.That(v.Length(), Is.EqualTo(6), "vector length before clear");
 
         v.Clear();
         Assert.That(v.Length(), Is.EqualTo(0), "vector length after clear");
 
-        double[] result = v.ToArray();
+        var result = v.ToArray();
         Assert.That(result.Length, Is.EqualTo(0), "array length after clear");
 
         // can start adding things again
@@ -242,7 +269,7 @@ public class VectorT_Tests
         Assert.That(v.Length(), Is.EqualTo(3), "vector length");
         Assert.That(result.Length, Is.EqualTo(3), "array length");
 
-        for (int i = 0; i < expected.Length; i++) {
+        for (var i = 0; i < expected.Length; i++) {
             Assert.That(result[i], Is.EqualTo(expected[i]).Within(epsilon), "index "+i);
         }
     }
@@ -250,7 +277,7 @@ public class VectorT_Tests
     [Test]
     public void can_modify_items_in_vec_in_place_by_index() {
         double[] src = {0.1, 1.2, 2.3, 3.4, 4.5, 123};
-        Vector<double> v = new Vector<double>(src);
+        var v = new Vector<double>(src);
 
         v.Edit(1, x => x + 10.0);
         v.Edit(2, x => x * 10.0);
@@ -258,12 +285,12 @@ public class VectorT_Tests
         v.Edit(5, x => x % 10);
 
         double[] expected = {0.1, 11.2, 23.0, 3.4, -4.4, 3};
-        double[] result = v.ToArray();
+        var result = v.ToArray();
 
         Assert.That(v.Length(), Is.EqualTo(6), "vector length");
         Assert.That(result.Length, Is.EqualTo(6), "array length");
 
-        for (int i = 0; i < expected.Length; i++) {
+        for (var i = 0; i < expected.Length; i++) {
             Assert.That(result[i], Is.EqualTo(expected[i]).Within(epsilon), "index "+i);
         }
     }
@@ -271,8 +298,8 @@ public class VectorT_Tests
     [Test]
     public void vectors_can_scale_beyond_initial_bounds() {
         double[] initial = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20};
-        Vector<double> src = new Vector<double>(initial);
-        Vector<double> dst = new Vector<double>(8);
+        var src = new Vector<double>(initial);
+        var dst = new Vector<double>(8);
 
         while (src.NotEmpty()){
             Assert.False(src.IsEmpty());
@@ -282,13 +309,13 @@ public class VectorT_Tests
         }
 
         double[] expected = {11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-        double[] result = dst.ToArray();
+        var result = dst.ToArray();
 
         Assert.That(dst.Length(), Is.EqualTo(20), "dest length");
         Assert.That(result.Length, Is.EqualTo(20), "result length");
         Assert.That(src.Length(), Is.EqualTo(0), "source length");
 
-        for (int i = 0; i < expected.Length; i++) {
+        for (var i = 0; i < expected.Length; i++) {
             Assert.That(result[i], Is.EqualTo(expected[i]).Within(epsilon), "index "+i);
         }
     }
@@ -296,17 +323,17 @@ public class VectorT_Tests
     [Test]
     public void vectors_can_be_truncated_to_a_given_length(){
         double[] src = {0.1, 1.2, 2.3, 3.4, 4.5, 5.6};
-        Vector<double> v = new Vector<double>(src);
+        var v = new Vector<double>(src);
 
         v.TruncateTo(3);
 
         double[] expected = {0.1, 1.2, 2.3};
-        double[] result = v.ToArray();
+        var result = v.ToArray();
 
         Assert.That(v.Length(), Is.EqualTo(3), "vector length");
         Assert.That(result.Length, Is.EqualTo(3), "result length");
 
-        for (int i = 0; i < expected.Length; i++) {
+        for (var i = 0; i < expected.Length; i++) {
             Assert.That(result[i], Is.EqualTo(expected[i]).Within(epsilon), "index "+i);
         }
     }
@@ -314,7 +341,7 @@ public class VectorT_Tests
     [Test]
     public void vectors_can_have_leading_zeros_truncated(){
         double[] src = {0.0, 0.0, 0.0000001, 1, 2, 0, 0, 0};
-        Vector<double> v = new Vector<double>(src);
+        var v = new Vector<double>(src);
 
         Assert.That(v.Length(), Is.EqualTo(8), "vector length");
         v.TrimLeading(x => x == 0.0);
@@ -328,8 +355,8 @@ public class VectorT_Tests
     [Test]
     public void copied_vectors_do_not_share_data(){
         double[] src = {0.1, 1.2, 2.3, 3.4, 4.5, 5.6};
-        Vector<double> a = new Vector<double>(src);
-        Vector<double> b = new Vector<double>(a);
+        var a = new Vector<double>(src);
+        var b = new Vector<double>(a);
 
         a.Set(1, 1000.2);
 
@@ -344,8 +371,8 @@ public class VectorT_Tests
     [Test]
     public void can_create_vec_as_subset_of_another() {
         double[] src = {0.1, 1.2, 2.3, 3.4, 4.5, 5.6};
-        Vector<double> a = new Vector<double>(src);
-        Vector<double> b = a.Slice(1,3);
+        var a = new Vector<double>(src);
+        var b = a.Slice(1,3);
 
         Assert.That(a.Length(), Is.EqualTo(6), "a length");
         Assert.That(b.Length(), Is.EqualTo(2), "b length");
@@ -361,7 +388,7 @@ public class VectorT_Tests
 
     [Test]
     public void can_reverse_vector_in_place_after_various_operations_1(){
-        Vector<double> v = new Vector<double>();
+        var v = new Vector<double>();
 
         v.Reverse(); // should be a no-op, cause no errors
         Assert.That(v.Length(), Is.EqualTo(0), "vector length");
@@ -401,7 +428,7 @@ public class VectorT_Tests
 
     [Test]
     public void can_reverse_vector_in_place_after_various_operations_2(){
-        Vector<double> v = new Vector<double>();
+        var v = new Vector<double>();
 
         v.AddLast(-1);
         v.AddLast(-1);
