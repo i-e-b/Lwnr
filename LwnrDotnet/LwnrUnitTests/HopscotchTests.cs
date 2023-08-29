@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using HopscotchForth;
 // ReSharper disable InconsistentNaming
+// ReSharper disable AssignNullToNotNullAttribute
 
 namespace LwnrUnitTests;
 
