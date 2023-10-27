@@ -1,4 +1,6 @@
-﻿namespace LwnrCore.Containers;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace LwnrCore.Containers;
 
 /// <summary>
 /// `Vector` is a generic, auto-sizing, double-ended queue,
@@ -104,13 +106,37 @@ public class Vector<T>
     }
 
     /// <summary>
+    /// Remove the element at the front of the vector, returning its value if the vector is not empty.
+    /// Returns true if an item was removed, false if the vector was empty before calling.
+    /// </summary>
+    public bool TryRemoveFirst(out T item)
+    {
+        item = default!;
+        if (_head == _tail) return false;
+        item = PollFirst();
+        return true;
+    }
+
+    /// <summary>
     /// Remove the element at the back of the vector, returning its value
     /// </summary>
     /// <returns>Value of element removed</returns>
     /// <exception cref="Exception">Throws if the vector is empty</exception>
-    public T RemoveLast() {
+    public T RemoveLast()
+    {
         if (_head == _tail) throw new Exception("The vector is empty");
         return PollLast();
+    }
+
+    /// <summary>
+    /// Remove the element at the back of the vector, returning its value if the vector is not empty.
+    /// Returns true if an item was removed, false if the vector was empty before calling.
+    /// </summary>
+    public bool TryRemoveLast(out T item) {
+        item = default!;
+        if (_head == _tail) return false;
+        item = PollLast();
+        return true;
     }
 
     /// <summary>
@@ -122,6 +148,17 @@ public class Vector<T>
         if (_head == _tail) throw new Exception("The vector is empty");
         return _elements[_head];
     }
+    
+    /// <summary>
+    /// Read but don't remove first item in the vector.
+    /// Returns false if the vector is empty.
+    /// </summary>
+    public bool TryGetFirst(out T item) {
+        item = default!;
+        if (_head == _tail) return false;
+        item = _elements[_head];
+        return true;
+    }
 
     /// <summary>
     /// Read but don't remove last item in the vector
@@ -131,6 +168,17 @@ public class Vector<T>
     public T GetLast() {
         if (_head == _tail) throw new Exception("The vector is empty");
         return _elements[(_tail - 1) & (_elements.Length - 1)];
+    }
+    
+    /// <summary>
+    /// Read but don't remove last item in the vector.
+    /// Returns false if the vector is empty.
+    /// </summary>
+    public bool TryGetLast(out T item) {
+        item = default!;
+        if (_head == _tail) return false;
+        item = _elements[(_tail - 1) & (_elements.Length - 1)];
+        return true;
     }
 
     ///<summary>

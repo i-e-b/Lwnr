@@ -150,6 +150,24 @@ _Rwy'n byw yng Nghymru_, so I would say it like "Lunar", but you do you.
 
 ## Thought dump
 
+Syntax/Semantic: Copy assignment and Reference assignment are different and incompatible operations.
+
+OOP langs:
+```
+Object x = y; // x becomes a reference to the same object as y
+int a = b; // a is allocated as a new int with the same value as b
+```
+
+Lwnr:
+```
+(ref x y) // x becomes a new reference pointing to same object as y
+(set a b) // a is allocated as a new int with the same value as b
+
+(ref a b) // syntax error
+(set x y) // syntax error
+```
+
+
 Syntax: implicit container creation. Create a default container for the argument.
 
 other languages

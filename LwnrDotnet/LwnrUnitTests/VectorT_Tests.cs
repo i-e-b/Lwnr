@@ -369,6 +369,89 @@ public class VectorT_Tests
     }
 
     [Test]
+    public void can_speculatively_read_start_and_end_of_vector()
+    {
+        int[] src = {1, 2, 3, 4, 5};
+        var v = new Vector<int>(src);
+
+        var ok = v.TryGetFirst(out var value);
+        Assert.That(ok, Is.True);
+        Assert.That(value, Is.EqualTo(1));
+
+        ok = v.TryGetLast(out value);
+        Assert.That(ok, Is.True);
+        Assert.That(value, Is.EqualTo(5));
+        
+        v.RemoveFirst();
+        v.RemoveFirst();
+        v.RemoveLast();
+        v.RemoveLast();
+        
+        ok = v.TryGetFirst(out value);
+        Assert.That(ok, Is.True);
+        Assert.That(value, Is.EqualTo(3));
+
+        ok = v.TryGetLast(out value);
+        Assert.That(ok, Is.True);
+        Assert.That(value, Is.EqualTo(3));
+        
+        v.RemoveLast();
+        
+        ok = v.TryGetFirst(out value);
+        Assert.That(ok, Is.False);
+
+        ok = v.TryGetLast(out value);
+        Assert.That(ok, Is.False);
+    }
+    
+    [Test]
+    public void can_speculatively_remove_items_from_start_and_end_of_vector()
+    {
+        int[] src = {1, 2, 3, 4, 5};
+        var v = new Vector<int>(src);
+
+        var ok = v.TryGetFirst(out var value);
+        Assert.That(ok, Is.True);
+        Assert.That(value, Is.EqualTo(1));
+
+        ok = v.TryGetLast(out value);
+        Assert.That(ok, Is.True);
+        Assert.That(value, Is.EqualTo(5));
+        
+        ok =v.TryRemoveFirst(out value);
+        Assert.That(ok, Is.True);
+        Assert.That(value, Is.EqualTo(1));
+        
+        ok =v.TryRemoveFirst(out value);
+        Assert.That(ok, Is.True);
+        Assert.That(value, Is.EqualTo(2));
+        
+        ok =v.TryRemoveLast(out value);
+        Assert.That(ok, Is.True);
+        Assert.That(value, Is.EqualTo(5));
+        
+        ok =v.TryRemoveLast(out value);
+        Assert.That(ok, Is.True);
+        Assert.That(value, Is.EqualTo(4));
+        
+        ok = v.TryGetFirst(out value);
+        Assert.That(ok, Is.True);
+        Assert.That(value, Is.EqualTo(3));
+
+        ok = v.TryGetLast(out value);
+        Assert.That(ok, Is.True);
+        Assert.That(value, Is.EqualTo(3));
+        
+        v.RemoveLast();
+        
+        ok =v.TryRemoveFirst(out _);
+        Assert.That(ok, Is.False);
+        
+        ok =v.TryRemoveLast(out _);
+        Assert.That(ok, Is.False);
+    }
+
+    [Test]
     public void can_create_vec_as_subset_of_another() {
         double[] src = {0.1, 1.2, 2.3, 3.4, 4.5, 5.6};
         var a = new Vector<double>(src);
