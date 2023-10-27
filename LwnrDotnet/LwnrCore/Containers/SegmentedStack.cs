@@ -62,37 +62,6 @@ public class SegmentedStack
         _container.AddLast(new TaggedStackItem{Type = StackItemType.Data, Data = data});
         return idx;
     }
-    
-    /// <summary>
-    /// Remove a data element from the current segment.
-    /// Returns true if an element was removed, false
-    /// if there are no more elements in this segment.
-    /// </summary>
-    public bool PopData(out byte[]? data)
-    {
-        data = null;
-        if (!_container.TryGetLast(out var item)) return false;
-
-        switch (item.Type)
-        {
-            case StackItemType.Data:
-            case StackItemType.Reference:
-            {
-                var ok = TryDeference(item, out var finalTarget);
-                if (!ok || finalTarget is null) return false;
-                data = finalTarget.Data;
-                _container.RemoveLast();
-                return true;
-            }
-
-            case StackItemType.Invalid:
-            case StackItemType.StartOfSegment:
-            case StackItemType.Bottom:
-                return false;
-            
-            default: throw new Exception("Invalid state!");
-        }
-    }
 
     private bool TryDeference(TaggedStackItem? item, [NotNullWhen(true)]out TaggedStackItem? found)
     {
@@ -192,6 +161,7 @@ public class SegmentedStack
 
                 case StackItemType.DeferredCall:
                 {
+                    _container.RemoveLast();
                     if (item.DeferredCall is not null) deferredCalls.Add(item.DeferredCall);
                     break;
                 }
