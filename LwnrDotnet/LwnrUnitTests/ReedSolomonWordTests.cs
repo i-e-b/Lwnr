@@ -47,7 +47,7 @@ public class ReedSolomonWordTests
         var original = (_rnd.Next() << 1) ^ (_rnd.Next());
         var encoded = ReedSolomonWord.Encode(original);
 
-        Console.WriteLine($" {original:X4} -> {encoded:X8}");
+        Console.WriteLine($" {original:X8} -> {encoded:X16}");
 
         encoded ^= 4422242428444222; // 16 flipped bits
 
@@ -66,7 +66,7 @@ public class ReedSolomonWordTests
         for (int i = 0; i < 16; i++)
         {
             // TODO: this fails if the last symbol is damaged at all (probably an off-by-1)
-            var flips = 0x8;//(1L << _rnd.Next(0, 60)) | (1L << _rnd.Next(0, 63));
+            var flips = 0x1;//(1L << _rnd.Next(0, 60)) | (1L << _rnd.Next(0, 63));
             damaged ^= flips;
             Console.Write($"{flips:X16} | ");
             
@@ -111,7 +111,7 @@ public static class ReedSolomonWord
         
         
         var gen = gfIrreduciblePoly(extraCodes);
-        var mix = new int[msg.Length + gen.Length - 1];//Array(msg.length + gen.length - 1).fill(0);
+        var mix = new int[msg.Length + gen.Length];//Array(msg.length + gen.length - 1).fill(0);
         for (var i = 0; i < msg.Length; i++) {
             mix[i] = msg[i];
         }
@@ -128,14 +128,14 @@ public static class ReedSolomonWord
         for (var i = 0; i < msg.Length + gen.Length - 1; i++) { outp.Add(mix[i]); }
         for (var i = 0; i < msg.Length; i++) { outp[i] = msg[i]; }
         
-        long result = 0L;
+        ulong result = 0UL;
 
-        for (int i = 0; i < 16; i++)
+        for (int i = 0; i < outp.Count; i++)
         {
-            result = (result << 4) | (uint)(outp[i] & 0b1111);
+            result = (result << 4) | (uint)(outp[i] & 0x0F);
         }
 
-        return result; // should be 16 nybbles, 8 bytes
+        return (long)result; // should be 16 nybbles, 8 bytes
     }
 
     /// <summary>
@@ -145,28 +145,24 @@ public static class ReedSolomonWord
     /// </summary>
     public static long Refresh(long value)
     {
-        var originalValue = value;
-        const int expectedLength = 16;
+        var uvalue = (ulong)value;
         var msg = new int[16]; // 16 nybbles of 0..15
         for (int i = 15; i >= 0; i--)
         {
-            msg[i] = (int)(value & 0x0F);
-            value >>= 4;
+            msg[i] = (int)(uvalue & 0x0F);
+            uvalue >>= 4;
         }
         
-        var erases = expectedLength - msg.Length;
-        var synd = rsCalcSyndromes(msg, extraCodes);
-        if (allZeros(synd)) {
-            return originalValue;
+        var syndrome = rsCalcSyndromes(msg, extraCodes);
+        if (allZeros(syndrome)) {
+            return value;
         }
 
-        var errPoly = rsErrorLocatorPoly(synd, extraCodes, erases);
+        var errPoly = rsErrorLocatorPoly(syndrome, extraCodes, 0);
 
-        errPoly = errPoly.Reverse().Distinct().ToArray();
-        var errorPositions = rsFindErrors(errPoly, msg.Length);
+        var errorPositions = rsFindErrors(errPoly.Reverse().ToArray(), msg.Length);
 
-        errorPositions = errorPositions.Reverse().ToArray();
-        msg = rsCorrectErrors(msg, synd, errorPositions);
+        msg = rsCorrectErrors(msg, syndrome, errorPositions.Reverse().ToArray());
 
         // recheck result
         var synd2 = rsCalcSyndromes(msg, extraCodes);
@@ -181,7 +177,7 @@ public static class ReedSolomonWord
             return Encode(original); // rebuild polynomial
         }
 
-        throw new Exception("Too many errors");
+        throw new Exception("Too many errors (C)");
     }
     
     /// <summary>
@@ -374,7 +370,6 @@ public static class ReedSolomonWord
 
     private static int[] rsErrorLocatorPoly(int[] synd, int sym, int erases)
     {
-        if (erases < 0) throw new Exception("invalid erases");
         var errLoc = new List<int> { 1 };
         var oldLoc = new List<int> { 1 };
 
@@ -419,16 +414,17 @@ public static class ReedSolomonWord
         var errs = locPoly.Length - 1;
         var pos = new List<int>();
 
-        for (var i = 0; i < len; i++)
+        for (var i = 0; i <= len; i++)
         {
             var test = gfEvalPoly(locPoly, gfPow(2, i)) & 0x0f;
-            if (test == 0)
+            var loc = len - 1 - i;
+            if (test == 0 && loc >= 0)
             {
                 pos.Add(len - 1 - i);
             }
         }
 
-        if (pos.Count != errs) throw new Exception("too many errors (B)");
+        if (pos.Count != errs) throw new Exception($"Too many errors (B: {pos.Count} != {errs})");
 
         return pos.ToArray();
     }
@@ -449,11 +445,16 @@ public static class ReedSolomonWord
     private static int[] rsErrorEvaluator(int[] synd, int[] errLoc, int n)
     {
         var poly = gfMulPoly(synd, errLoc);
-        var len = poly.Length - (n + 1);
+        var len = poly.Length - n;
         for (var i = 0; i < len; i++)
         {
-            if (i + len >= poly.Length) poly[i] = 0;
+            //poly[i] = poly[i + len]; // out-of-bounds with C#, JS just ignores
+            
+            if (i + len >= poly.Length) poly[i] = poly[i + len - poly.Length]; //???
             else poly[i] = poly[i + len];
+            
+            //var idx = (i+len)%poly.Length;
+            //poly[i] = poly[idx];
         }
 
         return poly.Take(poly.Length - len).ToArray();
@@ -464,14 +465,14 @@ public static class ReedSolomonWord
         // Forney algorithm
         var len = msg.Length;
         var coeffPos = new List<int>();
-        var rSynd = synd.Reverse().ToList();
+        var rSynd = synd.Reverse().ToArray();
         for (var i = 0; i < pos.Length; i++)
         {
             coeffPos.Add(len - 1 - pos[i]);
         }
 
         var errLoc = rsDataErrorLocatorPoly(coeffPos.ToArray());
-        var errEval = rsErrorEvaluator(rSynd.ToArray(), errLoc, errLoc.Length - 1);
+        var errEval = rsErrorEvaluator(rSynd, errLoc, errLoc.Length);
 
         var chi = new List<int>();
         for (var i = 0; i < coeffPos.Count; i++)
