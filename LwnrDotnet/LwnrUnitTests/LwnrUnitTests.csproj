@@ -12,6 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\ClockHands\ClockHands.csproj" />
       <ProjectReference Include="..\HopscotchForth\HopscotchForth.csproj" />
       <ProjectReference Include="..\LwnrCore\LwnrCore.csproj" />
     </ItemGroup>
