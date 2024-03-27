@@ -12,7 +12,24 @@ public class Bit
     /// <see cref="Describe(string,System.Collections.Generic.IEnumerable{byte}?)"/>
     /// </summary>
     public static bool CodeModeForDescription { get; set; }
-    
+
+    /// <summary>
+    /// Get the next power-of-2 value above the input value.
+    /// </summary>
+    public static long NextPowerOf2(long v)
+    {
+        // Fill all bits below the most significant,
+        // then add one to roll over to power-of-2
+        v |= ( v  >> 1);
+        v |= ( v  >> 2);
+        v |= ( v  >> 4);
+        v |= ( v  >> 8);
+        v |= ( v  >> 16);
+        v |= ( v  >> 32);
+        v++;
+        return v;
+    }
+
     /// <summary>
     /// Render a human-friendly string for a file size in bytes
     /// </summary>
