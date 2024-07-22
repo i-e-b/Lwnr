@@ -99,22 +99,22 @@ The runtime is a simple interpreter of the AST for the same reasons.
 
 ## Motivating example?
 
-```
+```common lisp
 (def
   database-query (target-container query)
   
-  (set conn connect-to-database) # creates and opens db connection
+  (set conn connect-to-database) ; creates and opens db connection
   
   . . .
-  (alias item (target-container new)) # 'item' is NOT in our scope, as it's part of 'into', and aliased here
+  (alias item (target-container new)) ; 'item' is NOT in our scope, as it's part of 'into', and aliased here
   
-  (conn :query-into item) # alias passed in, as a reference to a fixed primitive
+  (conn :query-into item) ; alias passed in, as a reference to a fixed primitive
   
-  # db connection is closed here
+  ; db connection is closed here
 )
 
 (
-  (set x (maybe.new)) # binds with scope here
+  (set x (maybe.new)) ; binds with scope here
   (database-query x "SELECT COUNT(*) FROM table")
   
   (if (x hasValue)
@@ -122,19 +122,19 @@ The runtime is a simple interpreter of the AST for the same reasons.
     else:(log "Could not read value")
   )
   
-  # 'x' AND all its content gets destroyed here
+  ; 'x' AND all its content gets destroyed here
 )
 ```
 
-```
+```common lisp
 (def work (work-queue)
-  ...do stuff...
+  ;...do stuff...
 )
 
 (
   (set q (vector.new))
   
-  ... fill queue...
+  ;... fill queue...
   
   (set t1 (thread.new method: work data: q))
   (set t2 (thread.new method: work data: q))
@@ -153,31 +153,31 @@ _Rwy'n byw yng Nghymru_, so I would say it like "Lunar", but you do you.
 Syntax/Semantic: Copy assignment and Reference assignment are different and incompatible operations.
 
 OOP langs:
-```
+```csharp
 Object x = y; // x becomes a reference to the same object as y
 int a = b; // a is allocated as a new int with the same value as b
 ```
 
 Lwnr:
-```
-(ref x y) // x becomes a new reference pointing to same object as y
-(set a b) // a is allocated as a new int with the same value as b
+```common lisp
+(ref x y) ; x becomes a new reference pointing to same object as y
+(set a b) ; a is allocated as a new int with the same value as b
 
-(ref a b) // syntax error
-(set x y) // syntax error
+(ref a b) ; syntax error
+(set x y) ; syntax error
 ```
 
 
 Syntax: implicit container creation. Create a default container for the argument.
 
 other languages
-```
+```csharp
 var x = listA.concat(listB);
 int c = a + b;
 ```
 
 without sugar:
-```
+```common lisp
 (new list x)
 (new int c)
 (concat x listA listB)
@@ -185,7 +185,7 @@ without sugar:
 ```
 
 with sugar:
-```
+```common lisp
 (concat @x listA listB)
 (+ @c a b)
 ```
@@ -194,3 +194,71 @@ with sugar:
 ## Link dump
 
 https://buttondown.email/hillelwayne/archive/microfeatures-id-like-to-see-in-more-languages/
+
+## Random ideas
+
+### Attributes / Markers / Tags
+
+A tag that can be added to a list/expression without changing how it evaluates,
+but can still be accessed when not evaluating.
+
+For example, an s-expression for a vector image
+
+```common lisp
+(draw
+ (fill "red")
+ (circle [0, 0] 42 )
+)
+```
+
+could have a tag added to record UI selection:
+
+```common lisp
+(draw
+ (fill "red")
+ (circle [0, 0] 42 #{:selected=true})
+)
+```
+
+### Context parameter
+
+A type that acts as the parameter list of a lambda expression.
+Maybe not for s-expressions, but it's a combination of lambda and the basic `with` statement.
+Purpose is to make more natural lambda pipelines.
+
+Example from C#:
+
+```csharp
+// Using query expression syntax.
+var query = from word in words
+            group word.ToUpper() by word.Length into gr
+            orderby gr.Key
+            select new { Length = gr.Key, Words = gr };
+
+// Using method-based query syntax.
+var query2 = words.
+    GroupBy(w => w.Length, w => w.ToUpper()).
+    Select(g => new { Length = g.Key, Words = g }).
+    OrderBy(o => o.Length);
+```
+
+Note how the 'methods-based' section is full of `w => w.`, where the 'query syntax'
+carries parameter names between parts.
+
+So, we could do something like:
+
+```csharp
+From(words, :word)
+.GroupBy(word.Length, word.ToUpper() :gr)
+.Select(new { Length = gr.Key, Words = gr })
+.OrderBy(o => o.Length);
+```
+
+or have some kind of syntax sugar for single-parameter lambdas:
+
+```csharp
+words
+.GroupBy(@.Length, @.ToUpper())
+.Select(new { Length = @.Key, Words = @ })
+.OrderBy(@.Length);
+```

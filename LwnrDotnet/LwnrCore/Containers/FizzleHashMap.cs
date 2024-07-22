@@ -74,7 +74,7 @@ public class FizzleHashMap<TK, TV>
         slot.Value = value;
         slot.Depth = depth;
         _slots[idx] = slot;
-        Console.WriteLine($"Added {key}->{value}; depth={depth}; idx={idx}");
+        //Console.WriteLine($"Added {key}->{value}; depth={depth}; idx={idx}");
         return true;
     }
 
