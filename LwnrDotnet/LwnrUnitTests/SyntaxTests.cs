@@ -177,7 +177,7 @@ public class SyntaxTests
         
         var rendered = Parser.Render(tree);
         Console.WriteLine(rendered);
-        Assert.That(rendered.Trim(), Is.EqualTo(namedArgCall.Trim()), "rendered output");
+        Assert.That(FixLines(rendered), Is.EqualTo(FixLines(namedArgCall)), "rendered output");
     }
 
     [Test]
@@ -220,7 +220,7 @@ public class SyntaxTests
         // check indent in render
         var rendered = Parser.Render(tree);
         Console.WriteLine(rendered);
-        Assert.That(rendered.Trim(), Is.EqualTo(nonTrivial.Trim()), "rendered output");
+        Assert.That(FixLines(rendered), Is.EqualTo(FixLines(nonTrivial)), "rendered output");
     }
 
     [Test]
@@ -263,6 +263,8 @@ public class SyntaxTests
         
         var rendered = Parser.Render(tree);
         Console.WriteLine(rendered);
-        Assert.That(rendered.Trim(), Is.EqualTo(stackQuote.Trim()), "rendered output");
+        Assert.That(FixLines(rendered), Is.EqualTo(FixLines(stackQuote)), "rendered output");
     }
+    
+    private string FixLines(string src) => src.Replace("\r","").Trim();
 }
