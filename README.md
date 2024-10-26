@@ -118,8 +118,8 @@ The runtime is a simple interpreter of the AST for the same reasons.
   (database-query x "SELECT COUNT(*) FROM table")
   
   (if (x hasValue)
-    then:(log (x value))
-    else:(log "Could not read value")
+    :then (log (x value))
+    :else (log "Could not read value")
   )
   
   ; 'x' AND all its content gets destroyed here
@@ -136,9 +136,9 @@ The runtime is a simple interpreter of the AST for the same reasons.
   
   ;... fill queue...
   
-  (set t1 (thread.new method: work data: q))
-  (set t2 (thread.new method: work data: q))
-  (set t3 (thread.new method: work data: q))
+  (set t1 (thread.new method- work data- q))
+  (set t2 (thread.new method- work data- q))
+  (set t3 (thread.new method- work data- q))
   
   (thread.join t1 t2 t3)
 )

@@ -11,6 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Info", "_Info", "{80E56183
 		..\.gitignore = ..\.gitignore
 		..\LICENSE = ..\LICENSE
 		..\README.md = ..\README.md
+		..\RandomBrainDumps.md = ..\RandomBrainDumps.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HopscotchForth", "HopscotchForth\HopscotchForth.csproj", "{0DED59C9-2398-4C8D-9517-733D5A669BC3}"
