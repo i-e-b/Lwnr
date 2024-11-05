@@ -29,6 +29,11 @@ Each inbox has a unique ID. Standard ones for system calls. Can request one to a
 
 The ID of an inbox can be sent; this works as forwarding/indirection, or as a work loop to prevent need for back-tracking a long chain.
 
+Inboxes normally block caller if there is not enough space for more messages.
+A mode can be set where new messages are dropped when there is already a message in the box -- this implements
+a 'trigger' pattern, where the action is not repeated until last trigger is complete (like when pressing a button, it is
+not available until current action is done).
+
 Syntax ideas
 ------------
 
